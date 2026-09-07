@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoneyFlow - Expense Tracker</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    
+    <style>
+        body {
+            background-color: #f9fafb;
+            font-family: 'Inter', sans-serif;
+            color: #111827;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Mobile-First Header Wrapper */
+        .header-wrapper {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .page-title {
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            font-size: 1.25rem;
+            color: #1f2937;
+        }
+        
+        .brand-icon {
+            color: #4f46e5;
+            background: #e0e7ff;
+            padding: 6px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            margin-right: 8px;
+        }
+
+        .btn-primary-custom {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+            color: white;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-primary-custom:hover {
+            background-color: #4338ca;
+            border-color: #4338ca;
+        }
+
+        /* Ultra-Compact Summary Card (All inline) */
+        .summary-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0.75rem 1rem; /* Extremely tight padding */
+            margin-top: 1rem;
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-amount {
+            font-size: 1.4rem; /* Considerably smaller */
+            font-weight: 800;
+            color: #111827;
+            line-height: 1;
+            letter-spacing: -0.03em;
+        }
+        .total-label {
+            font-size: 0.65rem;
+            margin-bottom: 0.15rem;
+        }
+        .filter-select {
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            font-weight: 500;
+            color: #374151;
+            border-radius: 6px;
+            width: auto; /* Shrink to fit text */
+            min-width: 110px;
+        }
+        .btn-export {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        /* App-Like List Item Styling */
+        .expense-list {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-top: 1rem;
+            margin-bottom: 3rem;
+            overflow: hidden;
+        }
+        
+        .expense-item {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        
+        .expense-item:last-child {
+            border-bottom: none;
+        }
+
+        .expense-item:hover {
+            background-color: #f9fafb;
+        }
+
+        .expense-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        .expense-details {
+            flex-grow: 1;
+            padding: 0 0.75rem;
+            min-width: 0;
+        }
+
+        .expense-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .expense-meta {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .expense-amount-wrapper {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .expense-amount {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #111827;
+            margin-bottom: 0.2rem;
+        }
+
+        /* Action Icons */
+        .icon-action {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            padding: 0.1rem 0.2rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            font-size: 0.9rem;
+            margin-left: 0.25rem;
+        }
+        .icon-action.edit-btn:hover { color: #4f46e5; }
+        .icon-action.delete-btn:hover { color: #ef4444; }
+
+        /* Form Styling */
+        .form-label {
+            font-weight: 500;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+        .form-control, .form-select {
+            border-color: #d1d5db;
+            border-radius: 6px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+        }
+        textarea { resize: none; }
+
+        @media (max-width: 576px) {
+            .expense-list {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+                margin-top: 1rem;
+            }
+            .summary-card {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+                margin-top: 0;
+                border-top: none;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-wrapper shadow-sm">
+    <div class="container-md d-flex justify-content-between align-items-center">
+        <h1 class="m-0 page-title d-flex align-items-center">
+            <i class="fas fa-money-bill-transfer brand-icon"></i>MoneyFlow
+        </h1>
+        <button class="btn btn-primary-custom btn-sm py-1 px-3" id="openAddModalBtn">
+            <i class="fas fa-plus d-sm-none"></i>
+            <span class="d-none d-sm-inline"><i class="fas fa-plus me-2"></i>New Expense</span>
+        </button>
+    </div>
+</div>
+
+<div class="container-md p-0 p-sm-3">
+    
+    <div class="summary-card" id="summaryCard" style="display: none;">
+        <div class="flex-grow-1">
+            <div class="text-muted fw-bold text-uppercase total-label">Total Spent</div>
+            <div class="total-amount" id="totalAmountDisplay">$0.00</div>
+        </div>
+        
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm filter-select" id="timeFilter">
+                <option value="last_week">Last Week</option>
+                <option value="last_month" selected>Last Month</option>
+                <option value="last_year">Last Year</option>
+                <option value="last_3_years">3 Years</option>
+            </select>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill btn-export" id="exportCsvBtn" title="Export to CSV">
+                <i class="fas fa-download"></i> <span class="d-none d-sm-inline ms-1">CSV</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="loadingIndicator" class="text-center py-5 text-muted">
+        <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+        <div class="small">Loading data...</div>
+    </div>
+    
+    <div id="expenseListContainer" class="expense-list" style="display: none;">
+        </div>
+</div>
+
+<div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark" id="modalTitle">Add Expense</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="expenseForm">
+                    <input type="hidden" id="expenseId">
+                    
+                    <div class="mb-4">
+                        <label for="expenseName" class="form-label">Category</label>
+                        <select class="form-select w-100" id="expenseName" required>
+                            <option value="" disabled selected>Select category...</option>
+                            <option value="Grocery">Grocery</option>
+                            <option value="Car Accessories">Car Accessories</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Dress & Clothing">Dress & Clothing</option>
+                            <option value="Food & Dining">Food & Dining</option>
+                            <option value="Outing">Outing</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Digital Subscriptions">Digital Subscriptions</option>
+                            <option value="Electronics & Gadgets">Electronics & Gadgets</option>
+                            <option value="Grooming & Care">Grooming & Care</option>
+                            <option value="Vehicle Tax & Registration">Vehicle Tax & Registration</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Internet & Mobile">Internet & Mobile</option>
+                            <option value="Health & Medicine">Health & Medicine</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Fuel">Fuel</option>
+                            <option value="Public Transit">Public Transit</option>
+                            <option value="Gym & Activewear">Gym & Activewear</option>
+                            <option value="Home Supplies">Home Supplies</option>
+                            <option value="Education">Education</option>
+                            <option value="Gifts & Donations">Gifts & Donations</option>
+                            <option value="Savings & Investments">Savings & Investments</option>
+                            <option value="Furniture & Decor">Furniture & Decor</option>
+                            <option value="Pet Care">Pet Care</option>
+                            <option value="Home Repairs">Home Repairs</option>
+                            <option value="Live Events & Sports">Live Events & Sports</option>
+                            <option value="Books & Stationery">Books & Stationery</option>
+                            <option value="Laundry & Services">Laundry & Services</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-4">
+                            <label for="expenseAmount" class="form-label">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">$</span>
+                                <input type="number" step="0.01" class="form-control" id="expenseAmount" placeholder="0.00" required>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-4">
+                            <label for="expensePaidVia" class="form-label">Paid Via</label>
+                            <select class="form-select" id="expensePaidVia" required>
+                                <option value="Card" selected>Card</option>
+                                <option value="Cash">Cash</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label for="expenseDescription" class="form-label">Description <span class="text-muted fw-normal">(Optional)</span></label>
+                        <textarea class="form-control" id="expenseDescription" rows="2" placeholder="Add notes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary-custom" id="saveExpenseBtn">Save Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
+                </div>
+                <h5 class="mb-2 fw-bold">Delete Record</h5>
+                <p class="text-muted small mb-4">Are you sure? This action cannot be undone.</p>
+                <input type="hidden" id="deleteExpenseId">
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light border w-50" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger w-50" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize Modals
+    const expenseModal = new bootstrap.Modal(document.getElementById('expenseModal'));
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    
+    // Initialize Select2
+    $('#expenseName').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $('#expenseModal'),
+        placeholder: "Search category...",
+        width: '100%'
+    });
+
+    // Configure localForage
+    localforage.config({ name: 'MoneyFlowApp', storeName: 'expenses' });
+    const STORAGE_KEY = 'moneyFlowData';
+    let allExpenses = []; 
+
+    // Initial Load
+    localforage.getItem(STORAGE_KEY).then(function(value) {
+        allExpenses = value || [];
+        $('#loadingIndicator').hide();
+        $('#summaryCard').addClass('d-flex').show();
+        $('#expenseListContainer').show();
+        renderList();
+    }).catch(function(err) {
+        console.error("Error loading data:", err);
+        $('#loadingIndicator').text('Error loading data.');
+    });
+
+    // Trigger re-render when Filter changes
+    $('#timeFilter').change(function() {
+        renderList();
+    });
+
+    // Filtering Logic
+    function getFilteredExpenses() {
+        const filterVal = $('#timeFilter').val();
+        const now = new Date();
+        let cutoffDate = new Date();
+
+        if (filterVal === 'last_week') {
+            cutoffDate.setDate(now.getDate() - 7);
+        } else if (filterVal === 'last_month') {
+            cutoffDate.setDate(now.getDate() - 30); 
+        } else if (filterVal === 'last_year') {
+            cutoffDate.setDate(now.getDate() - 365);
+        } else if (filterVal === 'last_3_years') {
+            cutoffDate.setDate(now.getDate() - (365 * 3));
+        }
+
+        return allExpenses.filter(exp => new Date(exp.createdAt) >= cutoffDate);
+    }
+
+    // Helper: Category Icons
+    function getCategoryIcon(category) {
+        const icons = {
+            "Grocery": "fa-shopping-basket", "Car Accessories": "fa-car", "Shopping": "fa-shopping-bag",
+            "Food & Dining": "fa-utensils", "Travel": "fa-plane", "Digital Subscriptions": "fa-play",
+            "Fuel": "fa-gas-pump", "Health & Medicine": "fa-notes-medical"
+        };
+        return icons[category] || "fa-receipt";
+    }
+
+    // Format Date
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const d = new Date(dateString);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // Core Render Function
+    function renderList() {
+        const container = $('#expenseListContainer');
+        container.empty();
+
+        const filteredExpenses = getFilteredExpenses();
+
+        const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+        $('#totalAmountDisplay').text('$' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+
+        if (filteredExpenses.length === 0) {
+            container.append(`
+                <div class="text-center text-muted py-5 px-3">
+                    <i class="fas fa-wallet fa-3x mb-3 text-light"></i>
+                    <p class="mb-0 small">No expenses found for this period.</p>
+                </div>
+            `);
+            return;
+        }
+
+        const sortedExpenses = [...filteredExpenses].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        sortedExpenses.forEach(exp => {
+            const icon = getCategoryIcon(exp.name);
+            const methodIcon = exp.paidVia === 'Cash' ? 'fa-money-bill-wave' : 'fa-credit-card';
+            
+            const itemHtml = `
+                <div class="expense-item">
+                    <div class="expense-icon">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="expense-details">
+                        <div class="expense-title">${exp.name}</div>
+                        <div class="expense-meta">
+                            <i class="fas ${methodIcon} me-1"></i>${exp.paidVia} &bull; ${formatDate(exp.createdAt)}
+                        </div>
+                        ${exp.description ? `<div class="expense-meta mt-1 fst-italic text-truncate">${exp.description}</div>` : ''}
+                    </div>
+                    <div class="expense-amount-wrapper">
+                        <div class="expense-amount">$${parseFloat(exp.amount).toFixed(2)}</div>
+                        <div>
+                            <button class="icon-action edit-btn" onclick="openEditModal('${exp.id}')" title="Edit">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="icon-action delete-btn" onclick="openDeleteModal('${exp.id}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.append(itemHtml);
+        });
+    }
+
+    // CSV Export Functionality
+    $('#exportCsvBtn').click(function() {
+        const filteredData = getFilteredExpenses();
+        if (filteredData.length === 0) {
+            alert('No data to export for the selected time frame.');
+            return;
+        }
+
+        let csvContent = "Category,Amount,Paid Via,Description,Created At\n";
+
+        filteredData.forEach(row => {
+            let safeDesc = row.description ? `"${row.description.replace(/"/g, '""')}"` : '""';
+            let safeDate = `"${new Date(row.createdAt).toLocaleDateString('en-US')}"`;
+            
+            csvContent += `"${row.name}",${row.amount},"${row.paidVia}",${safeDesc},${safeDate}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const timeFilterLabel = $('#timeFilter option:selected').text().replace(/\s+/g, '_').toLowerCase();
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `moneyflow_${timeFilterLabel}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    // Save Data Function
+    function saveToStorage() {
+        $('#saveExpenseBtn').prop('disabled', true).text('Saving...');
+        localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
+            renderList();
+            expenseModal.hide();
+            $('#saveExpenseBtn').prop('disabled', false).text('Save Record');
+        }).catch(function(err) {
+            console.error("Error saving data:", err);
+            alert("Failed to save data!");
+            $('#saveExpenseBtn').prop('disabled', false).text('Save Record');
+        });
+    }
+
+    // Add Modal Trigger
+    $('#openAddModalBtn').click(function() {
+        $('#expenseForm')[0].reset();
+        $('#expenseId').val('');
+        $('#expenseName').val('').trigger('change');
+        $('#modalTitle').text('Add Expense');
+        expenseModal.show();
+    });
+
+    // Save Record (Add/Update)
+    $('#saveExpenseBtn').click(function() {
+        const id = $('#expenseId').val();
+        const name = $('#expenseName').val();
+        const amount = $('#expenseAmount').val();
+        const paidVia = $('#expensePaidVia').val();
+        const description = $('#expenseDescription').val().trim();
+        const now = new Date().toISOString();
+
+        if (!name || !amount) {
+            alert('Category and Amount are required.');
+            return;
+        }
+
+        if (id) {
+            const index = allExpenses.findIndex(e => e.id === id);
+            if (index !== -1) {
+                allExpenses[index].name = name;
+                allExpenses[index].amount = amount;
+                allExpenses[index].paidVia = paidVia;
+                allExpenses[index].description = description;
+                allExpenses[index].updatedAt = now;
+            }
+        } else {
+            allExpenses.push({
+                id: Date.now().toString(),
+                name, amount, paidVia, description,
+                createdAt: now, updatedAt: now
+            });
+        }
+
+        saveToStorage();
+    });
+
+    // Edit Modal Trigger
+    window.openEditModal = function(id) {
+        const exp = allExpenses.find(e => e.id === id);
+        if (exp) {
+            $('#expenseId').val(exp.id);
+            $('#expenseName').val(exp.name).trigger('change');
+            $('#expenseAmount').val(exp.amount);
+            $('#expensePaidVia').val(exp.paidVia);
+            $('#expenseDescription').val(exp.description);
+            $('#modalTitle').text('Edit Expense');
+            expenseModal.show();
+        }
+    };
+
+    // Delete Modal Trigger
+    window.openDeleteModal = function(id) {
+        $('#deleteExpenseId').val(id);
+        deleteModal.show();
+    };
+
+    // Confirm Delete
+    $('#confirmDeleteBtn').click(function() {
+        const id = $('#deleteExpenseId').val();
+        allExpenses = allExpenses.filter(e => e.id !== id);
+        
+        localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
+            renderList();
+            deleteModal.hide();
+        });
+    });
+});
+</script>
+
+</body>
+</html>
