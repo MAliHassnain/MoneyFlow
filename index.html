@@ -8,6 +8,10 @@
     <!-- App Icons -->
     <link rel="apple-touch-icon" href="money-icon.png">
     <link rel="icon" type="image/png" href="money-icon.png">
+    
+    <!-- Android Standalone App Links -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
 
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -427,8 +431,8 @@
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Paid Via</label>
                         <select class="form-select form-select-sm shadow-none" id="detailsPaidViaFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem;">
                             <option value="all" selected>All Methods</option>
-                            <option value="Card">Card</option>
                             <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
                             <option value="Online">Online</option>
                             <option value="Other">Other</option>
                         </select>
@@ -453,7 +457,7 @@
 </div>
 
 <!-- Change PIN Modal -->
-<div class="modal fade" id="changePinModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="changePinModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-bottom">
@@ -479,7 +483,7 @@
 </div>
 
 <!-- Add/Update Budget Modal -->
-<div class="modal fade" id="budgetModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="budgetModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-bottom">
@@ -503,7 +507,7 @@
 </div>
 
 <!-- Add/Update Expense Modal -->
-<div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="expenseModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-bottom">
@@ -562,8 +566,8 @@
                         <div class="col-6 mb-4">
                             <label for="expensePaidVia" class="form-label">Paid Via</label>
                             <select class="form-select" id="expensePaidVia" required>
-                                <option value="Card" selected>Card</option>
-                                <option value="Cash">Cash</option>
+                                <option value="Cash" selected>Cash</option>
+                                <option value="Card">Card</option>
                                 <option value="Online">Online</option>
                                 <option value="Other">Other</option>
                             </select>
@@ -584,7 +588,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="deleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-body text-center p-4">
