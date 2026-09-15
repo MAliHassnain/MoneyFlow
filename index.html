@@ -334,6 +334,11 @@
                     <span class="d-none d-sm-inline"><i class="fas fa-plus me-2"></i>New Expense</span>
                 </button>
                 
+                <!-- Manual Logout Icon -->
+                <button class="btn btn-light btn-sm rounded-pill border no-caret px-2 text-danger" id="logoutBtn" title="Sign Out / Lock App">
+                    <i class="fas fa-power-off"></i>
+                </button>
+                
                 <!-- Settings/Ellipsis Menu -->
                 <div class="dropdown">
                     <button class="btn btn-light btn-sm rounded-pill border no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Settings">
@@ -623,6 +628,8 @@ $(document).ready(function() {
     const STORAGE_KEY = 'moneyFlowData';
     const PIN_KEY = 'moneyFlowPin';
     const BUDGET_KEY = 'moneyFlowBudget';
+    const ACTIVITY_KEY = 'moneyFlowLastActivity';
+    const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
     
     let allExpenses = []; 
     let currentAppPin = null;
@@ -651,6 +658,42 @@ $(document).ready(function() {
         }
     });
 
+    // --- SESSION TRACKING LOGIC ---
+    function updateActivityTime() {
+        localStorage.setItem(ACTIVITY_KEY, Date.now());
+    }
+
+    // Keep session active while interacting, with a small throttle to prevent performance hits during scrolling
+    let activityThrottle = false;
+    function handleActivity() {
+        if ($('#mainAppWrapper').is(':visible') && !activityThrottle) {
+            updateActivityTime();
+            activityThrottle = true;
+            setTimeout(function() { activityThrottle = false; }, 2000); 
+        }
+    }
+
+    $(document).on('click keypress touchstart touchmove', handleActivity);
+    $(window).on('scroll', handleActivity);
+    $('.modal-dialog-scrollable .modal-body').on('scroll', handleActivity); // For the details popup specifically
+
+    function isSessionValid() {
+        const lastActivity = localStorage.getItem(ACTIVITY_KEY);
+        if (lastActivity && (Date.now() - parseInt(lastActivity) < SESSION_TIMEOUT)) {
+            return true;
+        }
+        return false;
+    }
+
+    // --- LOGOUT LOGIC ---
+    $('#logoutBtn').click(function(e) {
+        e.preventDefault();
+        localStorage.removeItem(ACTIVITY_KEY);
+        $('#mainAppWrapper').hide();
+        $('#authScreen').fadeIn(300);
+        $('#pinInput').val('').focus();
+    });
+
     // --- AUTHENTICATION LOGIC ---
     localforage.getItem(PIN_KEY).then(function(savedPin) {
         if (!savedPin) {
@@ -668,6 +711,11 @@ $(document).ready(function() {
             $('#authSubmitBtn').text('Unlock');
             $('#confirmPinWrapper').hide();
             $('#confirmPinInput').prop('required', false);
+
+            // Fast-track unlock if session is still valid
+            if (isSessionValid()) {
+                unlockApp(false); 
+            }
         }
     });
 
@@ -690,11 +738,11 @@ $(document).ready(function() {
             }
             localforage.setItem(PIN_KEY, inputPin).then(function() {
                 currentAppPin = inputPin;
-                unlockApp();
+                unlockApp(true);
             });
         } else {
             if (inputPin === currentAppPin) {
-                unlockApp();
+                unlockApp(true);
             } else {
                 $error.text("Incorrect PIN. Try again.").show();
                 $('#pinInput').val('').focus();
@@ -702,11 +750,21 @@ $(document).ready(function() {
         }
     });
 
-    function unlockApp() {
-        $('#authScreen').fadeOut(300, function() {
-            $('#mainAppWrapper').fadeIn(300);
+    function unlockApp(animate = true) {
+        $('#pinInput').val('');
+        $('#authError').hide();
+        updateActivityTime();
+
+        if (animate) {
+            $('#authScreen').fadeOut(300, function() {
+                $('#mainAppWrapper').fadeIn(300);
+                loadAppData();
+            });
+        } else {
+            $('#authScreen').hide();
+            $('#mainAppWrapper').show();
             loadAppData();
-        });
+        }
     }
 
     // --- CHANGE PIN ---
@@ -762,7 +820,7 @@ $(document).ready(function() {
             currentBudget = val;
             updateBudgetMenuText();
             budgetModal.hide();
-            renderMainList(); // Re-render to update the colored text
+            renderMainList(); 
         });
     });
 
