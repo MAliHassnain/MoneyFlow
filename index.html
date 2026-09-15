@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoneyFlow - HB - Expense Tracker</title>
     
+    <!-- App Icons -->
     <link rel="apple-touch-icon" href="money-icon.png">
     <link rel="icon" type="image/png" href="money-icon.png">
 
+    <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Select2 Bootstrap 5 Theme -->
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     
     <style>
@@ -50,7 +56,7 @@
             padding: 0.75rem !important;
         }
 
-        /* App Wrapper (Hidden until authenticated) */
+        /* App Wrapper */
         #mainAppWrapper {
             display: none;
         }
@@ -99,7 +105,7 @@
             display: none !important;
         }
 
-        /* Ultra-Compact Summary Card (Inline) */
+        /* Summary Card */
         .summary-card {
             background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
             border: 1px solid #e5e7eb;
@@ -114,10 +120,17 @@
         .total-amount {
             font-size: 1.4rem;
             font-weight: 800;
-            color: #111827;
             line-height: 1;
             letter-spacing: -0.03em;
+            transition: color 0.3s ease;
         }
+        
+        /* Budget Smart Colors */
+        .text-dark-custom { color: #111827 !important; }
+        .text-budget-safe { color: #10b981 !important; } /* Emerald */
+        .text-budget-warn { color: #f59e0b !important; } /* Amber */
+        .text-budget-danger { color: #ef4444 !important; } /* Red */
+
         .total-label {
             font-size: 0.65rem;
             margin-bottom: 0.15rem;
@@ -204,6 +217,29 @@
             margin-bottom: 0.2rem;
         }
 
+        /* Details Popup Specific Styling for Ultra-Compactness */
+        #detailsListContainer .expense-item {
+            padding: 0.5rem 0.6rem;
+        }
+        #detailsListContainer .expense-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 0.8rem;
+        }
+        #detailsListContainer .expense-title {
+            font-size: 0.85rem;
+        }
+        #detailsListContainer .expense-meta {
+            font-size: 0.7rem;
+        }
+        #detailsListContainer .expense-amount {
+            font-size: 0.85rem;
+        }
+        #detailsListContainer .icon-action {
+            font-size: 0.8rem;
+            padding: 0.1rem;
+        }
+
         /* Action Icons */
         .icon-action {
             background: none;
@@ -255,6 +291,7 @@
 </head>
 <body>
 
+<!-- PIN Auth Overlay -->
 <div id="authScreen" class="auth-overlay">
     <div class="auth-card">
         <div class="text-center mb-4">
@@ -266,6 +303,7 @@
             <div class="mb-3">
                 <input type="password" class="form-control text-center fw-bold pin-input" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" required autocomplete="off">
             </div>
+            <!-- Second Input: Only visible during initial setup -->
             <div class="mb-4" id="confirmPinWrapper" style="display: none;">
                 <label class="form-label small text-muted text-center w-100 mb-1">Confirm PIN</label>
                 <input type="password" class="form-control text-center fw-bold pin-input" id="confirmPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" autocomplete="off">
@@ -277,7 +315,9 @@
     </div>
 </div>
 
+<!-- Main App Content -->
 <div id="mainAppWrapper">
+    <!-- Sticky Header -->
     <div class="header-wrapper shadow-sm">
         <div class="container-md d-flex justify-content-between align-items-center">
             <h1 class="m-0 page-title d-flex align-items-center">
@@ -290,34 +330,43 @@
                     <span class="d-none d-sm-inline"><i class="fas fa-plus me-2"></i>New Expense</span>
                 </button>
                 
+                <!-- Settings/Ellipsis Menu -->
                 <div class="dropdown">
                     <button class="btn btn-light btn-sm rounded-pill border no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Settings">
                         <i class="fas fa-ellipsis-v px-1 text-muted"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
                         <li><a class="dropdown-item" href="#" id="openChangePinBtn"><i class="fas fa-key fa-fw text-secondary me-2"></i>Change PIN</a></li>
+                        <li><a class="dropdown-item" href="#" id="openBudgetBtn"><i class="fas fa-bullseye fa-fw text-secondary me-2"></i><span id="budgetMenuText">Add Budget</span></a></li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Main Content Area -->
     <div class="container-md p-0 p-sm-3">
-        
+        <!-- Ultra-Compact Summary & Filters -->
         <div class="summary-card" id="summaryCard" style="display: none;">
             <div class="flex-grow-1">
                 <div class="text-muted fw-bold text-uppercase total-label">Total Spent</div>
-                <div class="total-amount" id="totalAmountDisplay">Rs 0</div>
+                <div class="total-amount text-dark-custom" id="totalAmountDisplay">Rs 0</div>
             </div>
             
             <div class="d-flex align-items-center gap-2">
                 <select class="form-select form-select-sm filter-select" id="timeFilter">
-                    <option value="last_week">Last Week</option>
-                    <option value="last_month" selected>Last Month</option>
-                    <option value="last_year">Last Year</option>
+                    <option value="last_week">Last 7 Days</option>
+                    <option value="current_month" selected>Current Month</option>
+                    <option value="current_year">Current Year</option>
                     <option value="last_3_years">3 Years</option>
                 </select>
                 
+                <!-- Show Details Icon Button -->
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-2" id="openDetailsBtn" title="Detailed Report">
+                    <i class="fas fa-chart-bar px-1"></i>
+                </button>
+
+                <!-- DB Options Menu -->
                 <div class="dropdown">
                     <button class="btn btn-outline-secondary btn-sm rounded-pill no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Data Menu">
                         <i class="fas fa-database px-1"></i>
@@ -338,10 +387,73 @@
             <div class="small">Loading data...</div>
         </div>
         
-        <div id="expenseListContainer" class="expense-list" style="display: none;">
-            </div>
+        <div id="expenseListContainer" class="expense-list" style="display: none;"></div>
     </div>
-</div> <div class="modal fade" id="changePinModal" tabindex="-1" aria-hidden="true">
+</div>
+
+<!-- Detailed Report Modal (Static Backdrop + Scrollable Body) -->
+<div class="modal fade" id="detailsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            
+            <!-- Modal Header -->
+            <div class="modal-header border-bottom bg-light py-2 px-3">
+                <h6 class="modal-title fw-bold text-dark m-0">
+                    <i class="fas fa-chart-bar me-2 text-primary"></i>Detailed Report
+                </h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <!-- STICKY SECTION: Advanced Filters & Totals -->
+            <div class="bg-white border-bottom px-3 py-2">
+                <div class="row g-2 mb-2">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Duration</label>
+                        <select class="form-select form-select-sm shadow-none" id="detailsTimeFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem;">
+                            <option value="last_week">Last 7 Days</option>
+                            <option value="current_month" selected>Current Month</option>
+                            <option value="current_year">Current Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Category</label>
+                        <select class="form-select form-select-sm shadow-none" id="detailsCategoryFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem;">
+                            <option value="all" selected>All Categories</option>
+                            <!-- Dynamically Populated -->
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Paid Via</label>
+                        <select class="form-select form-select-sm shadow-none" id="detailsPaidViaFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem;">
+                            <option value="all" selected>All Methods</option>
+                            <option value="Card">Card</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Online">Online</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center bg-light rounded px-2 py-1 border">
+                    <div class="fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">Filtered Total</div>
+                    <div class="fw-bold text-dark" id="detailsTotalAmount" style="font-size: 1rem;">Rs 0</div>
+                </div>
+            </div>
+
+            <!-- SCROLLABLE SECTION: Report List -->
+            <div class="modal-body p-2 bg-light">
+                <div id="detailsListContainer" class="expense-list m-0 border border-light">
+                    <!-- Items populated dynamically -->
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Change PIN Modal -->
+<div class="modal fade" id="changePinModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-bottom">
@@ -366,6 +478,31 @@
     </div>
 </div>
 
+<!-- Add/Update Budget Modal -->
+<div class="modal fade" id="budgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark">Monthly Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="budgetForm">
+                    <div class="mb-4">
+                        <label class="form-label small text-muted">Set Budget Amount (0 to disable)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">Rs</span>
+                            <input type="number" class="form-control text-center fw-bold" id="budgetInput" step="1" min="0" placeholder="0" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary-custom w-100">Save Budget</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Update Expense Modal -->
 <div class="modal fade" id="expenseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -425,8 +562,8 @@
                         <div class="col-6 mb-4">
                             <label for="expensePaidVia" class="form-label">Paid Via</label>
                             <select class="form-select" id="expensePaidVia" required>
-                                <option value="Cash" selected>Cash</option>
-                                <option value="Card">Card</option>
+                                <option value="Card" selected>Card</option>
+                                <option value="Cash">Cash</option>
                                 <option value="Online">Online</option>
                                 <option value="Other">Other</option>
                             </select>
@@ -446,6 +583,7 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -465,9 +603,13 @@
     </div>
 </div>
 
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Select2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- LocalForage JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 
 <script>
@@ -476,17 +618,21 @@ $(document).ready(function() {
     localforage.config({ name: 'MoneyFlowApp', storeName: 'expenses' });
     const STORAGE_KEY = 'moneyFlowData';
     const PIN_KEY = 'moneyFlowPin';
+    const BUDGET_KEY = 'moneyFlowBudget';
     
     let allExpenses = []; 
     let currentAppPin = null;
     let isSettingUpPin = false;
+    let currentBudget = 0;
 
     // Initialize Modals
     const expenseModal = new bootstrap.Modal(document.getElementById('expenseModal'));
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     const changePinModal = new bootstrap.Modal(document.getElementById('changePinModal'));
+    const budgetModal = new bootstrap.Modal(document.getElementById('budgetModal'));
+    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
     
-    // Initialize Select2
+    // Initialize Select2 (Main Form)
     $('#expenseName').select2({
         theme: 'bootstrap-5',
         dropdownParent: $('#expenseModal'),
@@ -494,10 +640,16 @@ $(document).ready(function() {
         width: '100%'
     });
 
+    // Populate the Details Category Filter dynamically
+    $('#expenseName option').each(function() {
+        if ($(this).val() !== "") {
+            $('#detailsCategoryFilter').append(new Option($(this).text(), $(this).val()));
+        }
+    });
+
     // --- AUTHENTICATION LOGIC ---
     localforage.getItem(PIN_KEY).then(function(savedPin) {
         if (!savedPin) {
-            // First time setup: require double PIN entry
             isSettingUpPin = true;
             $('#authTitle').text('Welcome!');
             $('#authSubtitle').text('Set a 4-digit PIN to secure your app');
@@ -505,7 +657,6 @@ $(document).ready(function() {
             $('#confirmPinWrapper').show();
             $('#confirmPinInput').prop('required', true);
         } else {
-            // Returning user: single PIN entry
             isSettingUpPin = false;
             currentAppPin = savedPin;
             $('#authTitle').text('Enter PIN');
@@ -527,20 +678,17 @@ $(document).ready(function() {
         }
 
         if (isSettingUpPin) {
-            // First time setup - check confirmation
             const confirmPin = $('#confirmPinInput').val().trim();
             if (inputPin !== confirmPin) {
                 $error.text("PINs do not match! Please try again.").show();
                 $('#confirmPinInput').val('');
                 return;
             }
-            // Save new PIN
             localforage.setItem(PIN_KEY, inputPin).then(function() {
                 currentAppPin = inputPin;
                 unlockApp();
             });
         } else {
-            // Verify returning PIN
             if (inputPin === currentAppPin) {
                 unlockApp();
             } else {
@@ -557,7 +705,7 @@ $(document).ready(function() {
         });
     }
 
-    // --- CHANGE PIN LOGIC ---
+    // --- CHANGE PIN ---
     $('#openChangePinBtn').click(function(e) {
         e.preventDefault();
         $('#changePinForm')[0].reset();
@@ -575,7 +723,6 @@ $(document).ready(function() {
             $error.text("PIN must be exactly 4 digits").show();
             return;
         }
-
         if (newPin !== confirmPin) {
             $error.text("New PINs do not match").show();
             return;
@@ -588,45 +735,102 @@ $(document).ready(function() {
         });
     });
 
-    // --- APP DATA LOGIC ---
+    // --- BUDGET LOGIC ---
+    function updateBudgetMenuText() {
+        if (currentBudget > 0) {
+            $('#budgetMenuText').text('Update Budget');
+        } else {
+            $('#budgetMenuText').text('Add Budget');
+        }
+    }
+
+    $('#openBudgetBtn').click(function(e) {
+        e.preventDefault();
+        $('#budgetInput').val(currentBudget > 0 ? currentBudget : '');
+        budgetModal.show();
+    });
+
+    $('#budgetForm').submit(function(e) {
+        e.preventDefault();
+        const val = parseFloat($('#budgetInput').val()) || 0;
+        
+        localforage.setItem(BUDGET_KEY, val).then(function() {
+            currentBudget = val;
+            updateBudgetMenuText();
+            budgetModal.hide();
+            renderMainList(); // Re-render to update the colored text
+        });
+    });
+
+    // --- DETAILS MODAL ---
+    $('#openDetailsBtn').click(function(e) {
+        e.preventDefault();
+        $('#detailsTimeFilter').val('current_month');
+        $('#detailsCategoryFilter').val('all');
+        $('#detailsPaidViaFilter').val('all');
+        renderDetailsList();
+        detailsModal.show();
+    });
+
+    $('#detailsTimeFilter, #detailsCategoryFilter, #detailsPaidViaFilter').change(function() {
+        renderDetailsList();
+    });
+
+    // --- SHARED DATA LOGIC ---
     function loadAppData() {
-        localforage.getItem(STORAGE_KEY).then(function(value) {
-            allExpenses = value || [];
+        Promise.all([
+            localforage.getItem(STORAGE_KEY),
+            localforage.getItem(BUDGET_KEY)
+        ]).then(function([expenses, budget]) {
+            allExpenses = expenses || [];
+            currentBudget = parseFloat(budget) || 0;
+            
+            updateBudgetMenuText();
             $('#loadingIndicator').hide();
             $('#summaryCard').addClass('d-flex').show();
             $('#expenseListContainer').show();
-            renderList();
+            renderMainList();
         }).catch(function(err) {
             console.error("Error loading data:", err);
             $('#loadingIndicator').text('Error loading data.');
         });
     }
 
-    // Trigger re-render when Filter changes
     $('#timeFilter').change(function() {
-        renderList();
+        renderMainList();
     });
 
-    // Filtering Logic
-    function getFilteredExpenses() {
-        const filterVal = $('#timeFilter').val();
+    function filterData(data, timeVal, categoryVal = 'all', viaVal = 'all') {
         const now = new Date();
-        let cutoffDate = new Date();
+        let startDate = new Date(0); 
+        let endDate = new Date(3000, 0, 1); 
 
-        if (filterVal === 'last_week') {
-            cutoffDate.setDate(now.getDate() - 7);
-        } else if (filterVal === 'last_month') {
-            cutoffDate.setDate(now.getDate() - 30); 
-        } else if (filterVal === 'last_year') {
-            cutoffDate.setDate(now.getDate() - 365);
-        } else if (filterVal === 'last_3_years') {
-            cutoffDate.setDate(now.getDate() - (365 * 3));
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+        if (timeVal === 'last_week') {
+            startDate = new Date();
+            startDate.setDate(now.getDate() - 7);
+            endDate = endOfToday;
+        } else if (timeVal === 'current_month') {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = endOfToday;
+        } else if (timeVal === 'current_year') {
+            startDate = new Date(now.getFullYear(), 0, 1);
+            endDate = endOfToday;
+        } else if (timeVal === 'last_3_years') {
+            startDate = new Date(now.getFullYear() - 3, 0, 1);
+            endDate = endOfToday;
         }
 
-        return allExpenses.filter(exp => new Date(exp.createdAt) >= cutoffDate);
+        return data.filter(exp => {
+            const expDate = new Date(exp.createdAt);
+            const timeMatch = expDate >= startDate && expDate <= endDate;
+            const categoryMatch = categoryVal === 'all' || exp.name === categoryVal;
+            const viaMatch = viaVal === 'all' || exp.paidVia === viaVal;
+            return timeMatch && categoryMatch && viaMatch;
+        });
     }
 
-    // Helper: Category Icons
     function getCategoryIcon(category) {
         const icons = {
             "Grocery": "fa-shopping-basket", "Car Accessories": "fa-car", "Shopping": "fa-shopping-bag",
@@ -636,14 +840,12 @@ $(document).ready(function() {
         return icons[category] || "fa-receipt";
     }
 
-    // Format Date
     function formatDate(dateString) {
         if (!dateString) return '';
         const d = new Date(dateString);
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    // Format Currency (PKR)
     function formatCurrency(amount) {
         return parseFloat(amount).toLocaleString('en-PK', {
             minimumFractionDigits: 0, 
@@ -651,15 +853,69 @@ $(document).ready(function() {
         });
     }
 
-    // Core Render Function
-    function renderList() {
+    function generateItemHtml(exp) {
+        const icon = getCategoryIcon(exp.name);
+        let methodIcon = 'fa-credit-card';
+        if (exp.paidVia === 'Cash') methodIcon = 'fa-money-bill-wave';
+        else if (exp.paidVia === 'Online') methodIcon = 'fa-globe';
+        else if (exp.paidVia === 'Other') methodIcon = 'fa-wallet';
+        
+        return `
+            <div class="expense-item">
+                <div class="expense-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="expense-details">
+                    <div class="expense-title">${exp.name}</div>
+                    <div class="expense-meta">
+                        <i class="fas ${methodIcon} me-1"></i>${exp.paidVia} &bull; ${formatDate(exp.createdAt)}
+                    </div>
+                    ${exp.description ? `<div class="expense-meta mt-1 fst-italic text-truncate">${exp.description}</div>` : ''}
+                </div>
+                <div class="expense-amount-wrapper">
+                    <div class="expense-amount">Rs ${formatCurrency(exp.amount)}</div>
+                    <div>
+                        <button class="icon-action edit-btn" onclick="openEditModal('${exp.id}')" title="Edit">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="icon-action delete-btn" onclick="openDeleteModal('${exp.id}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Render Main List (With Smart Budget Coloring)
+    function renderMainList() {
         const container = $('#expenseListContainer');
         container.empty();
 
-        const filteredExpenses = getFilteredExpenses();
+        const timeVal = $('#timeFilter').val();
+        const filteredExpenses = filterData(allExpenses, timeVal);
 
         const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
-        $('#totalAmountDisplay').text('Rs ' + formatCurrency(total));
+        
+        // Smart Coloring Logic
+        const $totalDisplay = $('#totalAmountDisplay');
+        $totalDisplay.text('Rs ' + formatCurrency(total));
+        
+        // Reset colors
+        $totalDisplay.removeClass('text-dark-custom text-budget-safe text-budget-warn text-budget-danger');
+        
+        // Apply color ONLY if on "Current Month" and a budget exists
+        if (timeVal === 'current_month' && currentBudget > 0) {
+            if (total > currentBudget) {
+                $totalDisplay.addClass('text-budget-danger');
+            } else if (total > (currentBudget * 0.5)) {
+                $totalDisplay.addClass('text-budget-warn');
+            } else {
+                $totalDisplay.addClass('text-budget-safe');
+            }
+        } else {
+            $totalDisplay.addClass('text-dark-custom');
+        }
 
         if (filteredExpenses.length === 0) {
             container.append(`
@@ -672,56 +928,50 @@ $(document).ready(function() {
         }
 
         const sortedExpenses = [...filteredExpenses].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-        sortedExpenses.forEach(exp => {
-            const icon = getCategoryIcon(exp.name);
-            
-            // Determine icon for payment method
-            let methodIcon = 'fa-credit-card';
-            if (exp.paidVia === 'Cash') methodIcon = 'fa-money-bill-wave';
-            else if (exp.paidVia === 'Online') methodIcon = 'fa-globe';
-            else if (exp.paidVia === 'Other') methodIcon = 'fa-wallet';
-            
-            const itemHtml = `
-                <div class="expense-item">
-                    <div class="expense-icon">
-                        <i class="fas ${icon}"></i>
-                    </div>
-                    <div class="expense-details">
-                        <div class="expense-title">${exp.name}</div>
-                        <div class="expense-meta">
-                            <i class="fas ${methodIcon} me-1"></i>${exp.paidVia} &bull; ${formatDate(exp.createdAt)}
-                        </div>
-                        ${exp.description ? `<div class="expense-meta mt-1 fst-italic text-truncate">${exp.description}</div>` : ''}
-                    </div>
-                    <div class="expense-amount-wrapper">
-                        <div class="expense-amount">Rs ${formatCurrency(exp.amount)}</div>
-                        <div>
-                            <button class="icon-action edit-btn" onclick="openEditModal('${exp.id}')" title="Edit">
-                                <i class="fas fa-pen"></i>
-                            </button>
-                            <button class="icon-action delete-btn" onclick="openDeleteModal('${exp.id}')" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.append(itemHtml);
-        });
+        sortedExpenses.forEach(exp => container.append(generateItemHtml(exp)));
     }
 
-    // CSV Export Functionality
+    // Render Details List (Modal)
+    function renderDetailsList() {
+        const container = $('#detailsListContainer');
+        container.empty();
+
+        const timeVal = $('#detailsTimeFilter').val();
+        const catVal = $('#detailsCategoryFilter').val();
+        const viaVal = $('#detailsPaidViaFilter').val();
+
+        const filteredExpenses = filterData(allExpenses, timeVal, catVal, viaVal);
+        
+        const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+        // Note: details total remains dark, does not use budget colors
+        $('#detailsTotalAmount').text('Rs ' + formatCurrency(total));
+
+        if (filteredExpenses.length === 0) {
+            container.append(`
+                <div class="text-center text-muted py-4 px-3">
+                    <i class="fas fa-search fa-2x mb-2 text-light"></i>
+                    <p class="mb-0 small">No matching records found.</p>
+                </div>
+            `);
+            return;
+        }
+
+        const sortedExpenses = [...filteredExpenses].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        sortedExpenses.forEach(exp => container.append(generateItemHtml(exp)));
+    }
+
+    // CSV Export
     $('#exportCsvBtn').click(function(e) {
         e.preventDefault();
-        const filteredData = getFilteredExpenses();
+        const timeVal = $('#timeFilter').val();
+        const filteredData = filterData(allExpenses, timeVal);
+        
         if (filteredData.length === 0) {
             alert('No data to export for the selected time frame.');
             return;
         }
 
         let csvContent = "Category,Amount (PKR),Paid Via,Description,Created At\n";
-
         filteredData.forEach(row => {
             let safeDesc = row.description ? `"${row.description.replace(/"/g, '""')}"` : '""';
             let safeDate = `"${new Date(row.createdAt).toLocaleDateString('en-US')}"`;
@@ -741,14 +991,13 @@ $(document).ready(function() {
         document.body.removeChild(link);
     });
 
-    // Backup DB (Full JSON Export)
+    // Backup DB 
     $('#backupDbBtn').click(function(e) {
         e.preventDefault();
         if (allExpenses.length === 0) {
             alert('No data to backup.');
             return;
         }
-        
         const dataStr = JSON.stringify(allExpenses, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -775,45 +1024,41 @@ $(document).ready(function() {
         reader.onload = function(event) {
             try {
                 const importedData = JSON.parse(event.target.result);
+                if (!Array.isArray(importedData)) throw new Error("Invalid format.");
                 
-                if (!Array.isArray(importedData)) {
-                    throw new Error("Invalid format: File is not an array.");
-                }
-                
-                if (confirm('WARNING: This will replace all your current data with the backup file. Do you want to proceed?')) {
+                if (confirm('WARNING: This will replace all your current data with the backup file. Proceed?')) {
                     allExpenses = importedData;
                     localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
-                        renderList();
+                        renderMainList();
+                        if ($('#detailsModal').is(':visible')) renderDetailsList();
                         alert('Database restored successfully!');
-                    }).catch(function(err) {
-                        console.error('Error saving restored data:', err);
+                    }).catch(function() {
                         alert('Failed to save restored data.');
                     });
                 }
             } catch (err) {
-                console.error(err);
-                alert('Invalid backup file. Please select a valid MoneyFlow JSON backup.');
+                alert('Invalid backup file.');
             }
             $('#restoreFileInput').val('');
         };
         reader.readAsText(file);
     });
 
-    // Save Data Function 
+    // Save Data
     function saveToStorage() {
         $('#saveExpenseBtn').prop('disabled', true).text('Saving...');
         localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
-            renderList();
+            renderMainList();
+            if ($('#detailsModal').is(':visible')) renderDetailsList();
             expenseModal.hide();
             $('#saveExpenseBtn').prop('disabled', false).text('Save Record');
         }).catch(function(err) {
-            console.error("Error saving data:", err);
             alert("Failed to save data!");
             $('#saveExpenseBtn').prop('disabled', false).text('Save Record');
         });
     }
 
-    // Add Modal Trigger
+    // Add Trigger
     $('#openAddModalBtn').click(function() {
         $('#expenseForm')[0].reset();
         $('#expenseId').val('');
@@ -822,7 +1067,7 @@ $(document).ready(function() {
         expenseModal.show();
     });
 
-    // Save Record (Add/Update)
+    // Save (Add/Update)
     $('#saveExpenseBtn').click(function() {
         const id = $('#expenseId').val();
         const name = $('#expenseName').val();
@@ -847,16 +1092,14 @@ $(document).ready(function() {
             }
         } else {
             allExpenses.push({
-                id: Date.now().toString(),
-                name, amount, paidVia, description,
+                id: Date.now().toString(), name, amount, paidVia, description,
                 createdAt: now, updatedAt: now
             });
         }
-
         saveToStorage();
     });
 
-    // Edit Modal Trigger
+    // Edit Trigger 
     window.openEditModal = function(id) {
         const exp = allExpenses.find(e => e.id === id);
         if (exp) {
@@ -870,7 +1113,7 @@ $(document).ready(function() {
         }
     };
 
-    // Delete Modal Trigger
+    // Delete Trigger
     window.openDeleteModal = function(id) {
         $('#deleteExpenseId').val(id);
         deleteModal.show();
@@ -882,7 +1125,8 @@ $(document).ready(function() {
         allExpenses = allExpenses.filter(e => e.id !== id);
         
         localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
-            renderList();
+            renderMainList();
+            if ($('#detailsModal').is(':visible')) renderDetailsList();
             deleteModal.hide();
         });
     });
