@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoneyFlow - HB - Expense Tracker</title>
     
-    <!-- App Icons -->
+    <!-- App Icons & PWA Manifest -->
     <link rel="apple-touch-icon" href="money-icon.png">
     <link rel="icon" type="image/png" href="money-icon.png">
-    
-    <!-- Android Standalone App Links -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
 
@@ -221,7 +219,12 @@
             margin-bottom: 0.2rem;
         }
 
-        /* Details Popup Specific Styling for Ultra-Compactness */
+        /* Details Popup Specific Styling */
+        #detailsChartContainer {
+            /* Height is now fully managed dynamically by Javascript to prevent squishing */
+            position: relative;
+            width: 100%;
+        }
         #detailsListContainer .expense-item {
             padding: 0.5rem 0.6rem;
         }
@@ -450,8 +453,14 @@
                 </div>
             </div>
 
-            <!-- SCROLLABLE SECTION: Report List -->
+            <!-- SCROLLABLE SECTION: Chart & Report List -->
             <div class="modal-body p-2 bg-light">
+                
+                <!-- Pie Chart Container -->
+                <div id="detailsChartContainer" class="mb-3 p-2 bg-white rounded shadow-sm border" style="display: none;">
+                    <canvas id="detailsCategoryChart"></canvas>
+                </div>
+
                 <div id="detailsListContainer" class="expense-list m-0 border border-light">
                     <!-- Items populated dynamically -->
                 </div>
@@ -620,6 +629,8 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <!-- LocalForage JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 $(document).ready(function() {
@@ -629,12 +640,13 @@ $(document).ready(function() {
     const PIN_KEY = 'moneyFlowPin';
     const BUDGET_KEY = 'moneyFlowBudget';
     const ACTIVITY_KEY = 'moneyFlowLastActivity';
-    const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
     
     let allExpenses = []; 
     let currentAppPin = null;
     let isSettingUpPin = false;
     let currentBudget = 0;
+    let detailsPieChart = null;
 
     // Initialize Modals
     const expenseModal = new bootstrap.Modal(document.getElementById('expenseModal'));
@@ -663,7 +675,7 @@ $(document).ready(function() {
         localStorage.setItem(ACTIVITY_KEY, Date.now());
     }
 
-    // Keep session active while interacting, with a small throttle to prevent performance hits during scrolling
+    // Throttle activity to prevent excessive writes on scroll
     let activityThrottle = false;
     function handleActivity() {
         if ($('#mainAppWrapper').is(':visible') && !activityThrottle) {
@@ -675,7 +687,7 @@ $(document).ready(function() {
 
     $(document).on('click keypress touchstart touchmove', handleActivity);
     $(window).on('scroll', handleActivity);
-    $('.modal-dialog-scrollable .modal-body').on('scroll', handleActivity); // For the details popup specifically
+    $('.modal-dialog-scrollable .modal-body').on('scroll', handleActivity); 
 
     function isSessionValid() {
         const lastActivity = localStorage.getItem(ACTIVITY_KEY);
@@ -712,7 +724,6 @@ $(document).ready(function() {
             $('#confirmPinWrapper').hide();
             $('#confirmPinInput').prop('required', false);
 
-            // Fast-track unlock if session is still valid
             if (isSessionValid()) {
                 unlockApp(false); 
             }
@@ -830,7 +841,12 @@ $(document).ready(function() {
         $('#detailsTimeFilter').val('current_month');
         $('#detailsCategoryFilter').val('all');
         $('#detailsPaidViaFilter').val('all');
-        renderDetailsList();
+        
+        // Let UI stabilize then render
+        setTimeout(function() {
+            renderDetailsList();
+        }, 100);
+        
         detailsModal.show();
     });
 
@@ -949,7 +965,7 @@ $(document).ready(function() {
         `;
     }
 
-    // Render Main List (With Smart Budget Coloring)
+    // Render Main List
     function renderMainList() {
         const container = $('#expenseListContainer');
         container.empty();
@@ -959,14 +975,11 @@ $(document).ready(function() {
 
         const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
         
-        // Smart Coloring Logic
         const $totalDisplay = $('#totalAmountDisplay');
         $totalDisplay.text('Rs ' + formatCurrency(total));
         
-        // Reset colors
         $totalDisplay.removeClass('text-dark-custom text-budget-safe text-budget-warn text-budget-danger');
         
-        // Apply color ONLY if on "Current Month" and a budget exists
         if (timeVal === 'current_month' && currentBudget > 0) {
             if (total > currentBudget) {
                 $totalDisplay.addClass('text-budget-danger');
@@ -993,7 +1006,108 @@ $(document).ready(function() {
         sortedExpenses.forEach(exp => container.append(generateItemHtml(exp)));
     }
 
-    // Render Details List (Modal)
+    // Dynamic Chart Height Calculation
+    function getChartHeight(labelCount, isMobile) {
+        if (isMobile) {
+            // Allocate 220px for the pie, plus ~24px for each item in the legend stacked at the bottom
+            return 220 + (labelCount * 24);
+        } else {
+            // Allocate base height for right-side legend, ensuring it doesn't get cut off if very long
+            return Math.max(260, labelCount * 22 + 40);
+        }
+    }
+
+    // Update Chart Logic
+    function updatePieChart(filteredExpenses) {
+        const categoryTotals = {};
+        filteredExpenses.forEach(exp => {
+            const amount = parseFloat(exp.amount) || 0;
+            if (amount > 0) {
+                categoryTotals[exp.name] = (categoryTotals[exp.name] || 0) + amount;
+            }
+        });
+
+        const originalLabels = Object.keys(categoryTotals);
+        const dataVals = Object.values(categoryTotals);
+        
+        // Dynamically add the amount to the category label text for the legend
+        const labels = originalLabels.map((key, index) => `${key} - Rs ${formatCurrency(dataVals[index])}`);
+
+        if (labels.length === 0) {
+            $('#detailsChartContainer').hide();
+            return;
+        }
+
+        const isMobile = window.innerWidth < 768; 
+        const legendPosition = isMobile ? 'bottom' : 'right';
+
+        // Apply dynamic height to container *before* chart renders to prevent squishing
+        const dynamicHeight = getChartHeight(labels.length, isMobile);
+        $('#detailsChartContainer').css('height', dynamicHeight + 'px').show();
+
+        const ctx = document.getElementById('detailsCategoryChart').getContext('2d');
+        const bgColors = [
+            '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+            '#06b6d4', '#f97316', '#ec4899', '#84cc16', '#14b8a6', 
+            '#6366f1', '#f43f5e'
+        ];
+
+        if (detailsPieChart) {
+            detailsPieChart.data.labels = labels;
+            detailsPieChart.data.datasets[0].data = dataVals;
+            detailsPieChart.options.plugins.legend.position = legendPosition;
+            detailsPieChart.options.plugins.legend.align = isMobile ? 'start' : 'center';
+            detailsPieChart.update();
+        } else {
+            detailsPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataVals,
+                        backgroundColor: bgColors,
+                        borderWidth: 1,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: legendPosition,
+                            align: isMobile ? 'start' : 'center',
+                            labels: { boxWidth: 12, font: { size: 11, family: 'Inter' }, padding: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // Adjust chart height natively on window rotate/resize
+    $(window).on('resize', function() {
+        if ($('#detailsModal').is(':visible') && detailsPieChart) {
+            const isMobile = window.innerWidth < 768;
+            const labelsCount = detailsPieChart.data.labels.length;
+            
+            const dynamicHeight = getChartHeight(labelsCount, isMobile);
+            $('#detailsChartContainer').css('height', dynamicHeight + 'px');
+
+            detailsPieChart.options.plugins.legend.position = isMobile ? 'bottom' : 'right';
+            detailsPieChart.options.plugins.legend.align = isMobile ? 'start' : 'center';
+            detailsPieChart.update();
+        }
+    });
+
+    // Render Details List & Chart (Modal)
     function renderDetailsList() {
         const container = $('#detailsListContainer');
         container.empty();
@@ -1005,8 +1119,9 @@ $(document).ready(function() {
         const filteredExpenses = filterData(allExpenses, timeVal, catVal, viaVal);
         
         const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
-        // Note: details total remains dark, does not use budget colors
         $('#detailsTotalAmount').text('Rs ' + formatCurrency(total));
+
+        updatePieChart(filteredExpenses);
 
         if (filteredExpenses.length === 0) {
             container.append(`
