@@ -23,11 +23,43 @@
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     
     <style>
-        body {
+        /* Strict App-Like Body Constraints */
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Prevents full-page bounce/scroll */
+            margin: 0;
+            padding: 0;
             background-color: #f9fafb;
             font-family: 'Inter', sans-serif;
             color: #111827;
             -webkit-font-smoothing: antialiased;
+        }
+
+        /* Flexbox Layout for Main App */
+        #mainAppWrapper {
+            display: none;
+            height: 100%;
+            width: 100%;
+        }
+
+        .app-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        .app-header-section {
+            flex-shrink: 0;
+            background-color: #f9fafb;
+            z-index: 1000;
+        }
+
+        .app-content-section {
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+            padding-bottom: 2rem;
         }
 
         /* PIN Auth Overlay */
@@ -58,19 +90,11 @@
             padding: 0.75rem !important;
         }
 
-        /* App Wrapper */
-        #mainAppWrapper {
-            display: none;
-        }
-
         /* Mobile-First Header Wrapper */
         .header-wrapper {
             background-color: #ffffff;
             border-bottom: 1px solid #e5e7eb;
             padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
         }
 
         .page-title {
@@ -153,7 +177,7 @@
             border: 1px solid #e5e7eb;
             border-radius: 10px;
             margin-top: 1rem;
-            margin-bottom: 3rem;
+            margin-bottom: 1rem;
             overflow: hidden;
         }
         
@@ -221,7 +245,6 @@
 
         /* Details Popup Specific Styling */
         #detailsChartContainer {
-            /* Height is now fully managed dynamically by Javascript to prevent squishing */
             position: relative;
             width: 100%;
         }
@@ -324,82 +347,93 @@
 
 <!-- Main App Content -->
 <div id="mainAppWrapper">
-    <!-- Sticky Header -->
-    <div class="header-wrapper shadow-sm">
-        <div class="container-md d-flex justify-content-between align-items-center">
-            <h1 class="m-0 page-title d-flex align-items-center">
-                <i class="fas fa-money-bill-transfer brand-icon"></i>MoneyFlow - HB
-            </h1>
-            
-            <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-primary-custom btn-sm py-1 px-3" id="openAddModalBtn">
-                    <i class="fas fa-plus d-sm-none"></i>
-                    <span class="d-none d-sm-inline"><i class="fas fa-plus me-2"></i>New Expense</span>
-                </button>
-                
-                <!-- Manual Logout Icon -->
-                <button class="btn btn-light btn-sm rounded-pill border no-caret px-2 text-danger" id="logoutBtn" title="Sign Out / Lock App">
-                    <i class="fas fa-power-off"></i>
-                </button>
-                
-                <!-- Settings/Ellipsis Menu -->
-                <div class="dropdown">
-                    <button class="btn btn-light btn-sm rounded-pill border no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Settings">
-                        <i class="fas fa-ellipsis-v px-1 text-muted"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
-                        <li><a class="dropdown-item" href="#" id="openChangePinBtn"><i class="fas fa-key fa-fw text-secondary me-2"></i>Change PIN</a></li>
-                        <li><a class="dropdown-item" href="#" id="openBudgetBtn"><i class="fas fa-bullseye fa-fw text-secondary me-2"></i><span id="budgetMenuText">Add Budget</span></a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content Area -->
-    <div class="container-md p-0 p-sm-3">
-        <!-- Ultra-Compact Summary & Filters -->
-        <div class="summary-card" id="summaryCard" style="display: none;">
-            <div class="flex-grow-1">
-                <div class="text-muted fw-bold text-uppercase total-label">Total Spent</div>
-                <div class="total-amount text-dark-custom" id="totalAmountDisplay">Rs 0</div>
-            </div>
-            
-            <div class="d-flex align-items-center gap-2">
-                <select class="form-select form-select-sm filter-select" id="timeFilter">
-                    <option value="last_week">Last 7 Days</option>
-                    <option value="current_month" selected>Current Month</option>
-                    <option value="current_year">Current Year</option>
-                    <option value="last_3_years">3 Years</option>
-                </select>
-                
-                <!-- Show Details Icon Button -->
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-2" id="openDetailsBtn" title="Detailed Report">
-                    <i class="fas fa-chart-bar px-1"></i>
-                </button>
-
-                <!-- DB Options Menu -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-secondary btn-sm rounded-pill no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Data Menu">
-                        <i class="fas fa-database px-1"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
-                        <li><a class="dropdown-item" href="#" id="exportCsvBtn"><i class="fas fa-file-csv fa-fw text-secondary me-2"></i>Export CSV (Filtered)</a></li>
-                        <li><a class="dropdown-item" href="#" id="backupDbBtn"><i class="fas fa-file-download fa-fw text-secondary me-2"></i>Backup DB (Full JSON)</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" id="restoreDbBtn"><i class="fas fa-upload fa-fw me-2"></i>Restore DB</a></li>
-                    </ul>
-                </div>
-                <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
-            </div>
-        </div>
-
-        <div id="loadingIndicator" class="text-center py-5 text-muted">
-            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
-            <div class="small">Loading data...</div>
-        </div>
+    <div class="app-layout">
         
-        <div id="expenseListContainer" class="expense-list" style="display: none;"></div>
+        <!-- FIXED TOP HEADER & FILTERS -->
+        <div class="app-header-section shadow-sm border-bottom">
+            <!-- Header -->
+            <div class="header-wrapper border-bottom-0 shadow-none pb-2">
+                <div class="container-md d-flex justify-content-between align-items-center">
+                    <h1 class="m-0 page-title d-flex align-items-center">
+                        <i class="fas fa-money-bill-transfer brand-icon"></i>MoneyFlow - HB
+                    </h1>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-primary-custom btn-sm py-1 px-3" id="openAddModalBtn">
+                            <i class="fas fa-plus d-sm-none"></i>
+                            <span class="d-none d-sm-inline"><i class="fas fa-plus me-2"></i>New Expense</span>
+                        </button>
+                        
+                        <!-- Manual Logout Icon -->
+                        <button class="btn btn-light btn-sm rounded-pill border no-caret px-2 text-danger" id="logoutBtn" title="Sign Out / Lock App">
+                            <i class="fas fa-power-off"></i>
+                        </button>
+                        
+                        <!-- Settings/Ellipsis Menu -->
+                        <div class="dropdown">
+                            <button class="btn btn-light btn-sm rounded-pill border no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Settings">
+                                <i class="fas fa-ellipsis-v px-1 text-muted"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
+                                <li><a class="dropdown-item" href="#" id="openChangePinBtn"><i class="fas fa-key fa-fw text-secondary me-2"></i>Change PIN</a></li>
+                                <li><a class="dropdown-item" href="#" id="openBudgetBtn"><i class="fas fa-bullseye fa-fw text-secondary me-2"></i><span id="budgetMenuText">Add Budget</span></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ultra-Compact Summary & Filters -->
+            <div class="container-md p-0 p-sm-3 pb-0 pb-sm-2 pt-0">
+                <div class="summary-card mb-0" id="summaryCard" style="display: none;">
+                    <div class="flex-grow-1">
+                        <div class="text-muted fw-bold text-uppercase total-label">Total Spent</div>
+                        <div class="total-amount text-dark-custom" id="totalAmountDisplay">Rs 0</div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="form-select form-select-sm filter-select" id="timeFilter">
+                            <option value="last_week">Last 7 Days</option>
+                            <option value="current_month" selected>Current Month</option>
+                            <option value="current_year">Current Year</option>
+                            <option value="last_3_years">3 Years</option>
+                        </select>
+                        
+                        <!-- Show Details Icon Button -->
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-2" id="openDetailsBtn" title="Detailed Report">
+                            <i class="fas fa-chart-bar px-1"></i>
+                        </button>
+
+                        <!-- DB Options Menu -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Data Menu">
+                                <i class="fas fa-database px-1"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
+                                <li><a class="dropdown-item" href="#" id="exportCsvBtn"><i class="fas fa-file-csv fa-fw text-secondary me-2"></i>Export CSV (Filtered)</a></li>
+                                <li><a class="dropdown-item" href="#" id="backupDbBtn"><i class="fas fa-file-download fa-fw text-secondary me-2"></i>Backup DB (Full JSON)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" id="restoreDbBtn"><i class="fas fa-upload fa-fw me-2"></i>Restore DB</a></li>
+                            </ul>
+                        </div>
+                        <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCROLLABLE CONTENT AREA -->
+        <div class="app-content-section" id="scrollableArea">
+            <div class="container-md p-0 p-sm-3 pt-2 pt-sm-3">
+                <div id="loadingIndicator" class="text-center py-5 text-muted">
+                    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                    <div class="small">Loading data...</div>
+                </div>
+                
+                <div id="expenseListContainer" class="expense-list mt-0 mb-4" style="display: none;"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -456,11 +490,24 @@
             <!-- SCROLLABLE SECTION: Chart & Report List -->
             <div class="modal-body p-2 bg-light">
                 
-                <!-- Pie Chart Container -->
-                <div id="detailsChartContainer" class="mb-3 p-2 bg-white rounded shadow-sm border" style="display: none;">
-                    <canvas id="detailsCategoryChart"></canvas>
+                <!-- Chart Area Wrapper -->
+                <div id="detailsChartArea" style="display: none;" class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+                        <span class="fw-bold text-muted" style="font-size: 0.7rem; text-transform: uppercase;">Category Breakdown</span>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary" data-bs-toggle="collapse" data-bs-target="#detailsChartCollapse" aria-expanded="false" aria-controls="detailsChartCollapse" id="toggleChartBtn" style="font-size: 0.8rem; font-weight: 600;">
+                            <i class="fas fa-chevron-down me-1" id="toggleChartIcon"></i><span id="toggleChartText">Show Chart</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Collapsible Pie Chart Container -->
+                    <div class="collapse" id="detailsChartCollapse">
+                        <div id="detailsChartContainer" class="p-2 bg-white rounded shadow-sm border">
+                            <canvas id="detailsCategoryChart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- Report List -->
                 <div id="detailsListContainer" class="expense-list m-0 border border-light">
                     <!-- Items populated dynamically -->
                 </div>
@@ -687,6 +734,9 @@ $(document).ready(function() {
 
     $(document).on('click keypress touchstart touchmove', handleActivity);
     $(window).on('scroll', handleActivity);
+    
+    // Track scroll specifically on the new flexbox scroll areas
+    $('#scrollableArea').on('scroll', handleActivity); 
     $('.modal-dialog-scrollable .modal-body').on('scroll', handleActivity); 
 
     function isSessionValid() {
@@ -836,13 +886,33 @@ $(document).ready(function() {
     });
 
     // --- DETAILS MODAL ---
+    
+    $('#detailsChartCollapse').on('show.bs.collapse', function () {
+        $('#toggleChartText').text('Hide Chart');
+        $('#toggleChartIcon').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+    });
+    
+    $('#detailsChartCollapse').on('hide.bs.collapse', function () {
+        $('#toggleChartText').text('Show Chart');
+        $('#toggleChartIcon').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+    });
+
+    $('#detailsChartCollapse').on('shown.bs.collapse', function () {
+        if (detailsPieChart) {
+            detailsPieChart.update();
+        }
+    });
+
     $('#openDetailsBtn').click(function(e) {
         e.preventDefault();
         $('#detailsTimeFilter').val('current_month');
         $('#detailsCategoryFilter').val('all');
         $('#detailsPaidViaFilter').val('all');
         
-        // Let UI stabilize then render
+        $('#detailsChartCollapse').removeClass('show');
+        $('#toggleChartText').text('Show Chart');
+        $('#toggleChartIcon').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        
         setTimeout(function() {
             renderDetailsList();
         }, 100);
@@ -1009,10 +1079,8 @@ $(document).ready(function() {
     // Dynamic Chart Height Calculation
     function getChartHeight(labelCount, isMobile) {
         if (isMobile) {
-            // Allocate 220px for the pie, plus ~24px for each item in the legend stacked at the bottom
             return 220 + (labelCount * 24);
         } else {
-            // Allocate base height for right-side legend, ensuring it doesn't get cut off if very long
             return Math.max(260, labelCount * 22 + 40);
         }
     }
@@ -1030,20 +1098,20 @@ $(document).ready(function() {
         const originalLabels = Object.keys(categoryTotals);
         const dataVals = Object.values(categoryTotals);
         
-        // Dynamically add the amount to the category label text for the legend
         const labels = originalLabels.map((key, index) => `${key} - Rs ${formatCurrency(dataVals[index])}`);
 
         if (labels.length === 0) {
-            $('#detailsChartContainer').hide();
+            $('#detailsChartArea').hide();
             return;
         }
 
         const isMobile = window.innerWidth < 768; 
         const legendPosition = isMobile ? 'bottom' : 'right';
 
-        // Apply dynamic height to container *before* chart renders to prevent squishing
         const dynamicHeight = getChartHeight(labels.length, isMobile);
-        $('#detailsChartContainer').css('height', dynamicHeight + 'px').show();
+        $('#detailsChartContainer').css('height', dynamicHeight + 'px');
+        
+        $('#detailsChartArea').show();
 
         const ctx = document.getElementById('detailsCategoryChart').getContext('2d');
         const bgColors = [
@@ -1092,7 +1160,6 @@ $(document).ready(function() {
         }
     }
 
-    // Adjust chart height natively on window rotate/resize
     $(window).on('resize', function() {
         if ($('#detailsModal').is(':visible') && detailsPieChart) {
             const isMobile = window.innerWidth < 768;
