@@ -328,6 +328,17 @@
         }
         textarea { resize: none; }
 
+        /* Voice Recording Pulse Animation */
+        @keyframes pulse-red {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0.7)); }
+            70% { transform: scale(1.15); filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0)); }
+        }
+        .mic-recording {
+            color: #ef4444 !important;
+            animation: pulse-red 1.2s infinite;
+        }
+
         @media (max-width: 576px) {
             .expense-list {
                 border-radius: 0;
@@ -507,6 +518,10 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Search Notes</label>
+                        <input type="text" class="form-control form-control-sm shadow-none" id="detailsSearchFilter" placeholder="Type to filter descriptions..." style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem; height: 28px;">
+                    </div>
                 </div>
                 
                 <div class="d-flex justify-content-between align-items-center bg-light rounded px-2 py-1 border">
@@ -655,10 +670,23 @@
                             </select>
                         </div>
                     </div>
+                    
+                    <!-- Description Field with embedded Mic Icon & Top-Right Clear Text -->
                     <div class="mb-2">
-                        <label for="expenseDescription" class="form-label">Description <span class="text-muted fw-normal">(Optional)</span></label>
-                        <textarea class="form-control" id="expenseDescription" rows="2" placeholder="Add notes..."></textarea>
+                        <div class="d-flex justify-content-between align-items-end mb-1">
+                            <label for="expenseDescription" class="form-label mb-0">Description <span class="text-muted fw-normal">(Optional)</span></label>
+                            <button type="button" class="btn btn-sm btn-link text-secondary p-0 text-decoration-none shadow-none" id="clearDescBtn" style="font-size: 0.75rem; font-weight: 600;">
+                                Clear
+                            </button>
+                        </div>
+                        <div class="position-relative">
+                            <textarea class="form-control pe-5" id="expenseDescription" rows="2" placeholder="Add notes..."></textarea>
+                            <button type="button" class="btn btn-link position-absolute bottom-0 end-0 text-secondary p-2 shadow-none" id="micBtn" title="Tap to dictate notes">
+                                <i class="fas fa-microphone" id="micIcon"></i>
+                            </button>
+                        </div>
                     </div>
+                    
                     <div id="expenseError" class="text-danger small mt-3 text-center fw-medium" style="display: none;"></div>
                 </form>
             </div>
@@ -765,6 +793,99 @@ $(document).ready(function() {
             confirmCallback = null;
         }
     });
+
+    // --- Web Speech API Setup for Voice to Text ---
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isRecording = false;
+    let finalTranscript = ""; 
+
+    // Handle explicit clear button click
+    $('#clearDescBtn').click(function(e) {
+        e.preventDefault();
+        $('#expenseDescription').val('').trigger('input');
+    });
+
+    if (SpeechRecognitionAPI) {
+        recognition = new SpeechRecognitionAPI();
+        recognition.continuous = true; 
+        recognition.interimResults = true; 
+        
+        // Listen for manual edits/clears so the script always knows exactly what is currently in the box
+        $('#expenseDescription').on('input', function() {
+            finalTranscript = $(this).val();
+        });
+
+        recognition.onstart = function() {
+            isRecording = true;
+            $('#micIcon').removeClass('text-secondary').addClass('mic-recording');
+            
+            // Sync internal memory with whatever the user currently has in the text box
+            finalTranscript = $('#expenseDescription').val();
+        };
+
+        recognition.onresult = function(event) {
+            let interimTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                let segment = event.results[i][0].transcript;
+                
+                if (event.results[i].isFinal) {
+                    if (finalTranscript.length > 0 && !finalTranscript.endsWith(' ') && !segment.startsWith(' ') && !finalTranscript.endsWith('\n')) {
+                        finalTranscript += ' ';
+                    }
+                    finalTranscript += segment;
+                } else {
+                    if (interimTranscript.length > 0 && !interimTranscript.endsWith(' ') && !segment.startsWith(' ')) {
+                        interimTranscript += ' ';
+                    }
+                    interimTranscript += segment;
+                }
+            }
+            
+            let displayString = finalTranscript;
+            if (interimTranscript.length > 0) {
+                if (displayString.length > 0 && !displayString.endsWith(' ') && !interimTranscript.startsWith(' ') && !displayString.endsWith('\n')) {
+                    displayString += ' ';
+                }
+                displayString += interimTranscript;
+            }
+            
+            $('#expenseDescription').val(displayString);
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Speech Recognition Error:", event.error);
+            if (event.error !== 'no-speech') {
+                showToast("Voice input error: " + event.error, "error");
+            }
+            stopRecording();
+        };
+
+        recognition.onend = function() {
+            stopRecording();
+        };
+        
+        function stopRecording() {
+            isRecording = false;
+            $('#micIcon').addClass('text-secondary').removeClass('mic-recording');
+        }
+
+        $('#micBtn').click(function(e) {
+            e.preventDefault();
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(err) {
+                    console.log("Recognition already started");
+                }
+            }
+        });
+    } else {
+        $('#micBtn').hide(); 
+    }
 
     // Initialize Select2 (Main Form)
     $('#expenseName').select2({
@@ -1045,6 +1166,7 @@ $(document).ready(function() {
         $('#detailsTimeFilter').val('current_month');
         $('#detailsCategoryFilter').val('all').trigger('change.select2');
         $('#detailsPaidViaFilter').val('all');
+        $('#detailsSearchFilter').val('');
         
         $('#detailsChartCollapse').removeClass('show');
         $('#toggleChartText').text('Show Chart');
@@ -1058,6 +1180,10 @@ $(document).ready(function() {
     });
 
     $('#detailsTimeFilter, #detailsCategoryFilter, #detailsPaidViaFilter').change(function() {
+        renderDetailsList();
+    });
+    
+    $('#detailsSearchFilter').on('input', function() {
         renderDetailsList();
     });
 
@@ -1085,7 +1211,7 @@ $(document).ready(function() {
         renderMainList();
     });
 
-    function filterData(data, timeVal, categoryVal = 'all', viaVal = 'all') {
+    function filterData(data, timeVal, categoryVal = 'all', viaVal = 'all', searchVal = '') {
         const now = new Date();
         let startDate = new Date(0); 
         let endDate = new Date(3000, 0, 1); 
@@ -1106,13 +1232,17 @@ $(document).ready(function() {
             startDate = new Date(now.getFullYear() - 3, 0, 1);
             endDate = endOfToday;
         }
+        
+        const searchLower = searchVal.toLowerCase();
 
         return data.filter(exp => {
             const expDate = new Date(exp.createdAt);
             const timeMatch = expDate >= startDate && expDate <= endDate;
             const categoryMatch = categoryVal === 'all' || exp.name === categoryVal;
             const viaMatch = viaVal === 'all' || exp.paidVia === viaVal;
-            return timeMatch && categoryMatch && viaMatch;
+            const searchMatch = searchVal === '' || (exp.description && exp.description.toLowerCase().includes(searchLower));
+            
+            return timeMatch && categoryMatch && viaMatch && searchMatch;
         });
     }
 
@@ -1321,8 +1451,9 @@ $(document).ready(function() {
         const timeVal = $('#detailsTimeFilter').val();
         const catVal = $('#detailsCategoryFilter').val();
         const viaVal = $('#detailsPaidViaFilter').val();
+        const searchVal = $('#detailsSearchFilter').val().trim();
 
-        const filteredExpenses = filterData(allExpenses, timeVal, catVal, viaVal);
+        const filteredExpenses = filterData(allExpenses, timeVal, catVal, viaVal, searchVal);
         
         const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
         $('#detailsTotalAmount').text('Rs ' + formatCurrency(total));
@@ -1433,6 +1564,8 @@ $(document).ready(function() {
             expenseModal.hide();
             $('#saveExpenseBtn').prop('disabled', false).text('Save Record');
             
+            if (isRecording && recognition) recognition.stop();
+            
             showToast(isUpdate ? 'Expense updated successfully' : 'Expense added successfully', 'success');
         }).catch(function(err) {
             showToast('Failed to save data!', 'error');
@@ -1447,6 +1580,7 @@ $(document).ready(function() {
         $('#expenseId').val('');
         $('#expenseName').val('').trigger('change');
         $('#modalTitle').text('Add Expense');
+        if (isRecording && recognition) recognition.stop();
         expenseModal.show();
     });
 
@@ -1497,6 +1631,7 @@ $(document).ready(function() {
         const exp = allExpenses.find(e => e.id === id);
         if (exp) {
             $('#expenseError').hide(); 
+            if (isRecording && recognition) recognition.stop();
             $('#expenseId').val(exp.id);
             $('#expenseName').val(exp.name).trigger('change');
             $('#expenseAmount').val(exp.amount);
