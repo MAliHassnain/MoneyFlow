@@ -53,7 +53,6 @@
             flex-shrink: 0;
             background-color: #f9fafb;
             z-index: 1000;
-            transform: translateZ(0); /* Hardware acceleration fixes blur on mobile */
             padding-top: env(safe-area-inset-top); /* Prevents overlapping with mobile status bar */
         }
 
@@ -356,6 +355,7 @@
             <div class="mb-3">
                 <input type="password" class="form-control text-center fw-bold pin-input" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" required autocomplete="off">
             </div>
+            <!-- Second Input: Only visible during initial setup -->
             <div class="mb-4" id="confirmPinWrapper" style="display: none;">
                 <label class="form-label small text-muted text-center w-100 mb-1">Confirm PIN</label>
                 <input type="password" class="form-control text-center fw-bold pin-input" id="confirmPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" autocomplete="off">
@@ -683,26 +683,6 @@
     </div>
 </div>
 
-<!-- Delete Specific Confirmation Modal -->
-<div class="modal fade" id="deleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-body text-center p-4">
-                <div class="mb-3">
-                    <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
-                </div>
-                <h5 class="mb-2 fw-bold">Delete Record</h5>
-                <p class="text-muted small mb-4">Are you sure? This action cannot be undone.</p>
-                <input type="hidden" id="deleteExpenseId">
-                <div class="d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-light border w-50" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger w-50" id="confirmDeleteBtn">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Dynamic Toast Notification Container -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
     <div id="appToast" class="toast align-items-center border-0 text-white" role="alert" aria-live="assertive" aria-atomic="true">
@@ -742,7 +722,6 @@ $(document).ready(function() {
 
     // Initialize Modals
     const expenseModal = new bootstrap.Modal(document.getElementById('expenseModal'));
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     const changePinModal = new bootstrap.Modal(document.getElementById('changePinModal'));
     const budgetModal = new bootstrap.Modal(document.getElementById('budgetModal'));
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
@@ -943,6 +922,7 @@ $(document).ready(function() {
                     ]).then(function() {
                         isSettingUpPin = false;
                         
+                        // Reset auth screen texts to unlocked state behind the scenes
                         $('#authTitle').text('Enter PIN');
                         $('#authSubtitle').text('Unlock MoneyFlow - HB');
                         $('#authSubmitBtn').text('Unlock');
@@ -1177,7 +1157,7 @@ $(document).ready(function() {
                         <button class="icon-action edit-btn" onclick="openEditModal('${exp.id}')" title="Edit">
                             <i class="fas fa-pen"></i>
                         </button>
-                        <button class="icon-action delete-btn" onclick="openDeleteModal('${exp.id}')" title="Delete">
+                        <button class="icon-action delete-btn" onclick="deleteExpenseRecord('${exp.id}')" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1357,7 +1337,29 @@ $(document).ready(function() {
         sortedExpenses.forEach(exp => container.append(generateItemHtml(exp)));
     }
 
-    // Restore DB inside App (Unified Object format only)
+    // Backup DB 
+    $('#backupDbBtn').click(function(e) {
+        e.preventDefault();
+        
+        const backupData = {
+            expenses: allExpenses,
+            pin: currentAppPin,
+            budget: currentBudget
+        };
+
+        const dataStr = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.download = `moneyflow_backup_${dateStr}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    // Restore DB inside App
     $('#restoreDbBtn').click(function(e) {
         e.preventDefault();
         $('#restoreFileInput').click();
@@ -1499,24 +1501,17 @@ $(document).ready(function() {
         }
     };
 
-    // Delete Trigger
-    window.openDeleteModal = function(id) {
-        $('#deleteExpenseId').val(id);
-        deleteModal.show();
-    };
-
-    // Confirm Delete
-    $('#confirmDeleteBtn').click(function() {
-        const id = $('#deleteExpenseId').val();
-        allExpenses = allExpenses.filter(e => e.id !== id);
-        
-        localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
-            renderMainList();
-            if ($('#detailsModal').is(':visible')) renderDetailsList();
-            deleteModal.hide();
-            showToast('Record deleted successfully', 'success');
+    // Delete Flow via Custom Modal
+    window.deleteExpenseRecord = function(id) {
+        showConfirm('Delete Record', 'Are you sure? This action cannot be undone.', function() {
+            allExpenses = allExpenses.filter(e => e.id !== id);
+            localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
+                renderMainList();
+                if ($('#detailsModal').is(':visible')) renderDetailsList();
+                showToast('Record deleted successfully', 'success');
+            });
         });
-    });
+    };
 });
 </script>
 
