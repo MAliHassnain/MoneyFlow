@@ -53,6 +53,8 @@
             flex-shrink: 0;
             background-color: #f9fafb;
             z-index: 1000;
+            transform: translateZ(0); /* Hardware acceleration fixes blur on mobile */
+            padding-top: env(safe-area-inset-top); /* Prevents overlapping with mobile status bar */
         }
 
         .app-content-section {
@@ -245,6 +247,7 @@
 
         /* Details Popup Specific Styling */
         #detailsChartContainer {
+            /* Height is managed dynamically by Javascript */
             position: relative;
             width: 100%;
         }
@@ -268,6 +271,26 @@
         #detailsListContainer .icon-action {
             font-size: 0.8rem;
             padding: 0.1rem;
+        }
+
+        /* Compact Select2 in Details Modal to Match Standard Select Height */
+        #detailsModal .select2-container--bootstrap-5 .select2-selection {
+            font-size: 0.8rem !important;
+            min-height: 28px !important;
+            height: 28px !important;
+            border-color: #dee2e6 !important;
+            box-shadow: none !important;
+            display: flex;
+            align-items: center;
+        }
+        #detailsModal .select2-container--bootstrap-5 .select2-selection__rendered {
+            line-height: 1 !important;
+            padding: 0 0.4rem !important;
+            color: #374151 !important;
+        }
+        #detailsModal .select2-container--bootstrap-5 .select2-selection__arrow {
+            height: 26px !important;
+            top: 1px !important;
         }
 
         /* Action Icons */
@@ -376,7 +399,11 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
                                 <li><a class="dropdown-item" href="#" id="openChangePinBtn"><i class="fas fa-key fa-fw text-secondary me-2"></i>Change PIN</a></li>
-                                <li><a class="dropdown-item" href="#" id="openBudgetBtn"><i class="fas fa-bullseye fa-fw text-secondary me-2"></i><span id="budgetMenuText">Add Budget</span></a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header text-muted small fw-bold text-uppercase">Data Management</h6></li>
+                                <li><a class="dropdown-item" href="#" id="backupDbBtn"><i class="fas fa-file-download fa-fw text-secondary me-2"></i>Backup DB (Full JSON)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" id="restoreDbBtn"><i class="fas fa-upload fa-fw me-2"></i>Restore DB</a></li>
                             </ul>
                         </div>
                     </div>
@@ -404,16 +431,13 @@
                             <i class="fas fa-chart-bar px-1"></i>
                         </button>
 
-                        <!-- DB Options Menu -->
+                        <!-- Budget Options Menu -->
                         <div class="dropdown">
-                            <button class="btn btn-outline-secondary btn-sm rounded-pill no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Data Menu">
-                                <i class="fas fa-database px-1"></i>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill no-caret px-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Options">
+                                <i class="fas fa-ellipsis-v px-1"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
-                                <li><a class="dropdown-item" href="#" id="exportCsvBtn"><i class="fas fa-file-csv fa-fw text-secondary me-2"></i>Export CSV (Filtered)</a></li>
-                                <li><a class="dropdown-item" href="#" id="backupDbBtn"><i class="fas fa-file-download fa-fw text-secondary me-2"></i>Backup DB (Full JSON)</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="#" id="restoreDbBtn"><i class="fas fa-upload fa-fw me-2"></i>Restore DB</a></li>
+                                <li><a class="dropdown-item" href="#" id="openBudgetBtn"><i class="fas fa-bullseye fa-fw text-secondary me-2"></i><span id="budgetMenuText">Add Budget</span></a></li>
                             </ul>
                         </div>
                         <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
@@ -455,7 +479,8 @@
                 <div class="row g-2 mb-2">
                     <div class="col-12 col-md-4">
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Duration</label>
-                        <select class="form-select form-select-sm shadow-none" id="detailsTimeFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem;">
+                        <!-- Added height:28px inline constraint -->
+                        <select class="form-select form-select-sm shadow-none" id="detailsTimeFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem; height: 28px;">
                             <option value="last_week">Last 7 Days</option>
                             <option value="current_month" selected>Current Month</option>
                             <option value="current_year">Current Year</option>
@@ -464,14 +489,16 @@
                     </div>
                     <div class="col-6 col-md-4">
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Category</label>
-                        <select class="form-select form-select-sm shadow-none" id="detailsCategoryFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem;">
+                        <!-- Notice the lack of form-select class on select2 elements prevents double borders -->
+                        <select class="w-100" id="detailsCategoryFilter">
                             <option value="all" selected>All Categories</option>
                             <!-- Dynamically Populated -->
                         </select>
                     </div>
                     <div class="col-6 col-md-4">
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Paid Via</label>
-                        <select class="form-select form-select-sm shadow-none" id="detailsPaidViaFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem;">
+                        <!-- Added height:28px inline constraint -->
+                        <select class="form-select form-select-sm shadow-none" id="detailsPaidViaFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem; height: 28px;">
                             <option value="all" selected>All Methods</option>
                             <option value="Cash">Cash</option>
                             <option value="Card">Card</option>
@@ -717,6 +744,13 @@ $(document).ready(function() {
         }
     });
 
+    // Initialize Select2 (Details Filter)
+    $('#detailsCategoryFilter').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $('#detailsModal'),
+        width: '100%'
+    });
+
     // --- SESSION TRACKING LOGIC ---
     function updateActivityTime() {
         localStorage.setItem(ACTIVITY_KEY, Date.now());
@@ -906,7 +940,7 @@ $(document).ready(function() {
     $('#openDetailsBtn').click(function(e) {
         e.preventDefault();
         $('#detailsTimeFilter').val('current_month');
-        $('#detailsCategoryFilter').val('all');
+        $('#detailsCategoryFilter').val('all').trigger('change.select2'); // Reset visually
         $('#detailsPaidViaFilter').val('all');
         
         $('#detailsChartCollapse').removeClass('show');
@@ -1098,6 +1132,7 @@ $(document).ready(function() {
         const originalLabels = Object.keys(categoryTotals);
         const dataVals = Object.values(categoryTotals);
         
+        // Dynamically add the amount to the category label text for the legend
         const labels = originalLabels.map((key, index) => `${key} - Rs ${formatCurrency(dataVals[index])}`);
 
         if (labels.length === 0) {
@@ -1108,9 +1143,11 @@ $(document).ready(function() {
         const isMobile = window.innerWidth < 768; 
         const legendPosition = isMobile ? 'bottom' : 'right';
 
+        // Apply dynamic height to container *before* chart renders to prevent squishing
         const dynamicHeight = getChartHeight(labels.length, isMobile);
         $('#detailsChartContainer').css('height', dynamicHeight + 'px');
         
+        // Ensure wrapper is visible
         $('#detailsChartArea').show();
 
         const ctx = document.getElementById('detailsCategoryChart').getContext('2d');
@@ -1148,7 +1185,11 @@ $(document).ready(function() {
                             labels: { boxWidth: 12, font: { size: 11, family: 'Inter' }, padding: 12 }
                         },
                         tooltip: {
+                            displayColors: false, // Prevents the color box in tooltip
                             callbacks: {
+                                title: function() {
+                                    return null; // Prevents duplicate title line
+                                },
                                 label: function(context) {
                                     return context.label;
                                 }
@@ -1160,6 +1201,7 @@ $(document).ready(function() {
         }
     }
 
+    // Adjust chart height natively on window rotate/resize
     $(window).on('resize', function() {
         if ($('#detailsModal').is(':visible') && detailsPieChart) {
             const isMobile = window.innerWidth < 768;
@@ -1204,45 +1246,17 @@ $(document).ready(function() {
         sortedExpenses.forEach(exp => container.append(generateItemHtml(exp)));
     }
 
-    // CSV Export
-    $('#exportCsvBtn').click(function(e) {
-        e.preventDefault();
-        const timeVal = $('#timeFilter').val();
-        const filteredData = filterData(allExpenses, timeVal);
-        
-        if (filteredData.length === 0) {
-            alert('No data to export for the selected time frame.');
-            return;
-        }
-
-        let csvContent = "Category,Amount (PKR),Paid Via,Description,Created At\n";
-        filteredData.forEach(row => {
-            let safeDesc = row.description ? `"${row.description.replace(/"/g, '""')}"` : '""';
-            let safeDate = `"${new Date(row.createdAt).toLocaleDateString('en-US')}"`;
-            csvContent += `"${row.name}",${row.amount},"${row.paidVia}",${safeDesc},${safeDate}\n`;
-        });
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        const timeFilterLabel = $('#timeFilter option:selected').text().replace(/\s+/g, '_').toLowerCase();
-        
-        link.setAttribute("href", url);
-        link.setAttribute("download", `moneyflow_${timeFilterLabel}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-
-    // Backup DB 
+    // Backup DB (Full JSON with Expenses, PIN, and Budget)
     $('#backupDbBtn').click(function(e) {
         e.preventDefault();
-        if (allExpenses.length === 0) {
-            alert('No data to backup.');
-            return;
-        }
-        const dataStr = JSON.stringify(allExpenses, null, 2);
+        
+        const backupData = {
+            expenses: allExpenses,
+            pin: currentAppPin,
+            budget: currentBudget
+        };
+
+        const dataStr = JSON.stringify(backupData, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -1254,7 +1268,7 @@ $(document).ready(function() {
         document.body.removeChild(link);
     });
 
-    // Restore DB 
+    // Restore DB (Unified Object format only)
     $('#restoreDbBtn').click(function(e) {
         e.preventDefault();
         $('#restoreFileInput').click();
@@ -1268,20 +1282,29 @@ $(document).ready(function() {
         reader.onload = function(event) {
             try {
                 const importedData = JSON.parse(event.target.result);
-                if (!Array.isArray(importedData)) throw new Error("Invalid format.");
                 
-                if (confirm('WARNING: This will replace all your current data with the backup file. Proceed?')) {
-                    allExpenses = importedData;
-                    localforage.setItem(STORAGE_KEY, allExpenses).then(function() {
+                if (!importedData || typeof importedData !== 'object' || !Array.isArray(importedData.expenses)) {
+                    throw new Error("Invalid format.");
+                }
+                
+                if (confirm('WARNING: This will replace all your current data (Expenses, PIN, and Budget) with the backup file. Proceed?')) {
+                    allExpenses = importedData.expenses;
+                    currentAppPin = importedData.pin || currentAppPin;
+                    currentBudget = importedData.budget || currentBudget;
+                    
+                    Promise.all([
+                        localforage.setItem(STORAGE_KEY, allExpenses),
+                        localforage.setItem(PIN_KEY, currentAppPin),
+                        localforage.setItem(BUDGET_KEY, currentBudget)
+                    ]).then(function() {
+                        updateBudgetMenuText();
                         renderMainList();
                         if ($('#detailsModal').is(':visible')) renderDetailsList();
                         alert('Database restored successfully!');
-                    }).catch(function() {
-                        alert('Failed to save restored data.');
                     });
                 }
             } catch (err) {
-                alert('Invalid backup file.');
+                alert('Invalid backup file format.');
             }
             $('#restoreFileInput').val('');
         };
