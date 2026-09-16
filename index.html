@@ -364,6 +364,14 @@
             
             <button type="submit" class="btn btn-primary-custom w-100 py-2" id="authSubmitBtn">Unlock</button>
             <div id="authError" class="text-danger small mt-3 text-center fw-medium" style="display: none;"></div>
+            
+            <!-- Restore DB on Login Screen -->
+            <div class="mt-4 text-center">
+                <a href="#" id="authRestoreBtn" class="text-muted small text-decoration-none">
+                    <i class="fas fa-upload me-1"></i>Restore Backup
+                </a>
+                <input type="file" id="authRestoreFileInput" accept=".json" style="display: none;">
+            </div>
         </form>
     </div>
 </div>
@@ -479,7 +487,6 @@
                 <div class="row g-2 mb-2">
                     <div class="col-12 col-md-4">
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Duration</label>
-                        <!-- Added height:28px inline constraint -->
                         <select class="form-select form-select-sm shadow-none" id="detailsTimeFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem; height: 28px;">
                             <option value="last_week">Last 7 Days</option>
                             <option value="current_month" selected>Current Month</option>
@@ -489,7 +496,6 @@
                     </div>
                     <div class="col-6 col-md-4">
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Category</label>
-                        <!-- Notice the lack of form-select class on select2 elements prevents double borders -->
                         <select class="w-100" id="detailsCategoryFilter">
                             <option value="all" selected>All Categories</option>
                             <!-- Dynamically Populated -->
@@ -497,7 +503,6 @@
                     </div>
                     <div class="col-6 col-md-4">
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Paid Via</label>
-                        <!-- Added height:28px inline constraint -->
                         <select class="form-select form-select-sm shadow-none" id="detailsPaidViaFilter" style="font-size: 0.8rem; padding-top: 0.15rem; padding-bottom: 0.15rem; height: 28px;">
                             <option value="all" selected>All Methods</option>
                             <option value="Cash">Cash</option>
@@ -861,6 +866,59 @@ $(document).ready(function() {
             loadAppData();
         }
     }
+
+    // --- RESTORE BACKUP ON LOGIN SCREEN ---
+    $('#authRestoreBtn').click(function(e) {
+        e.preventDefault();
+        $('#authRestoreFileInput').click();
+    });
+
+    $('#authRestoreFileInput').change(function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const importedData = JSON.parse(event.target.result);
+                
+                if (!importedData || typeof importedData !== 'object' || !Array.isArray(importedData.expenses)) {
+                    throw new Error("Invalid format.");
+                }
+                
+                if (confirm('WARNING: This will replace all your current data with the backup file. Proceed?')) {
+                    allExpenses = importedData.expenses;
+                    currentAppPin = importedData.pin || currentAppPin;
+                    currentBudget = importedData.budget || currentBudget;
+                    
+                    Promise.all([
+                        localforage.setItem(STORAGE_KEY, allExpenses),
+                        localforage.setItem(PIN_KEY, currentAppPin),
+                        localforage.setItem(BUDGET_KEY, currentBudget)
+                    ]).then(function() {
+                        isSettingUpPin = false;
+                        
+                        // Reset auth screen texts to unlocked state behind the scenes
+                        $('#authTitle').text('Enter PIN');
+                        $('#authSubtitle').text('Unlock MoneyFlow - HB');
+                        $('#authSubmitBtn').text('Unlock');
+                        $('#confirmPinWrapper').hide();
+                        $('#confirmPinInput').prop('required', false);
+                        
+                        updateBudgetMenuText();
+                        
+                        // Drop back to login screen so user MUST enter PIN to verify
+                        alert('Database restored successfully! Please enter your PIN to continue.');
+                        $('#pinInput').val('').focus();
+                    });
+                }
+            } catch (err) {
+                alert('Invalid backup file format. Ensure you are using a unified JSON backup.');
+            }
+            $('#authRestoreFileInput').val('');
+        };
+        reader.readAsText(file);
+    });
 
     // --- CHANGE PIN ---
     $('#openChangePinBtn').click(function(e) {
@@ -1268,7 +1326,7 @@ $(document).ready(function() {
         document.body.removeChild(link);
     });
 
-    // Restore DB (Unified Object format only)
+    // Restore DB inside App (Unified Object format only)
     $('#restoreDbBtn').click(function(e) {
         e.preventDefault();
         $('#restoreFileInput').click();
@@ -1298,13 +1356,32 @@ $(document).ready(function() {
                         localforage.setItem(BUDGET_KEY, currentBudget)
                     ]).then(function() {
                         updateBudgetMenuText();
-                        renderMainList();
-                        if ($('#detailsModal').is(':visible')) renderDetailsList();
-                        alert('Database restored successfully!');
+                        
+                        // Close any open modals
+                        detailsModal.hide();
+                        expenseModal.hide();
+                        budgetModal.hide();
+                        changePinModal.hide();
+                        
+                        alert('Database restored successfully! Please log in again with your restored PIN.');
+                        
+                        // Drop back to login screen so user MUST enter PIN to verify
+                        localStorage.removeItem(ACTIVITY_KEY);
+                        $('#mainAppWrapper').hide();
+                        
+                        isSettingUpPin = false;
+                        $('#authTitle').text('Enter PIN');
+                        $('#authSubtitle').text('Unlock MoneyFlow - HB');
+                        $('#authSubmitBtn').text('Unlock');
+                        $('#confirmPinWrapper').hide();
+                        $('#confirmPinInput').prop('required', false);
+                        
+                        $('#authScreen').fadeIn(300);
+                        $('#pinInput').val('').focus();
                     });
                 }
             } catch (err) {
-                alert('Invalid backup file format.');
+                alert('Invalid backup file format. Ensure you are using a unified JSON backup.');
             }
             $('#restoreFileInput').val('');
         };
