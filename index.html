@@ -2,14 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>MoneyFlow - HB - Expense Tracker</title>
     
     <!-- App Icons & PWA Manifest -->
     <link rel="apple-touch-icon" href="money-icon.png">
     <link rel="icon" type="image/png" href="money-icon.png">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="theme-color" content="#f9fafb">
+    
+    <!-- iOS specific meta tags for status bar handling -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -53,7 +57,8 @@
             flex-shrink: 0;
             background-color: #f9fafb;
             z-index: 1000;
-            padding-top: env(safe-area-inset-top); /* Prevents overlapping with mobile status bar */
+            /* Extra explicit padding added here to prevent iPhone status bar blur */
+            padding-top: calc(env(safe-area-inset-top) + 12px); 
         }
 
         .app-content-section {
@@ -462,7 +467,7 @@
     </div>
 </div>
 
-<!-- Detailed Report Modal (Static Backdrop + Scrollable Body) -->
+<!-- Detailed Report Modal -->
 <div class="modal fade" id="detailsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
