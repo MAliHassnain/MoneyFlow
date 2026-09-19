@@ -9,7 +9,6 @@
     <link rel="apple-touch-icon" href="money-icon.png">
     <link rel="icon" type="image/png" href="money-icon.png">
     <link rel="manifest" href="manifest.json">
-    <!-- Changed theme color to white to seamlessly blend with the app header -->
     <meta name="theme-color" content="#ffffff">
     
     <!-- iOS specific meta tags for status bar handling -->
@@ -56,7 +55,7 @@
 
         .app-header-section {
             flex-shrink: 0;
-            background-color: #ffffff; /* Changed to white to remove the gray gap */
+            background-color: #ffffff;
             z-index: 1000;
         }
 
@@ -99,7 +98,6 @@
         .header-wrapper {
             background-color: #ffffff;
             border-bottom: 1px solid #e5e7eb;
-            /* Applies notch safe area + explicit 2rem padding to push title/buttons down */
             padding-top: calc(env(safe-area-inset-top) + 2rem); 
             padding-bottom: 1rem;
         }
@@ -252,7 +250,6 @@
 
         /* Details Popup Specific Styling */
         #detailsChartContainer {
-            /* Height is managed dynamically by Javascript */
             position: relative;
             width: 100%;
         }
@@ -278,7 +275,7 @@
             padding: 0.1rem;
         }
 
-        /* Compact Select2 in Details Modal to Match Standard Select Height */
+        /* Compact Select2 in Details Modal */
         #detailsModal .select2-container--bootstrap-5 .select2-selection {
             font-size: 0.8rem !important;
             min-height: 28px !important;
@@ -372,7 +369,6 @@
             <div class="mb-3">
                 <input type="password" class="form-control text-center fw-bold pin-input" id="pinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" required autocomplete="off">
             </div>
-            <!-- Second Input: Only visible during initial setup -->
             <div class="mb-4" id="confirmPinWrapper" style="display: none;">
                 <label class="form-label small text-muted text-center w-100 mb-1">Confirm PIN</label>
                 <input type="password" class="form-control text-center fw-bold pin-input" id="confirmPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" autocomplete="off">
@@ -381,7 +377,6 @@
             <button type="submit" class="btn btn-primary-custom w-100 py-2" id="authSubmitBtn">Unlock</button>
             <div id="authError" class="text-danger small mt-3 text-center fw-medium" style="display: none;"></div>
             
-            <!-- Restore DB on Login Screen -->
             <div class="mt-4 text-center">
                 <a href="#" id="authRestoreBtn" class="text-muted small text-decoration-none">
                     <i class="fas fa-upload me-1"></i>Restore Backup
@@ -420,6 +415,8 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.9rem;">
                                 <li><a class="dropdown-item" href="#" id="openChangePinBtn"><i class="fas fa-key fa-fw text-secondary me-2"></i>Change PIN</a></li>
+                                <!-- New Categories Menu Item -->
+                                <li><a class="dropdown-item" href="#" id="openCategoriesBtn"><i class="fas fa-tags fa-fw text-secondary me-2"></i>Categories</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><h6 class="dropdown-header text-muted small fw-bold text-uppercase">Data Management</h6></li>
                                 <li><a class="dropdown-item" href="#" id="backupDbBtn"><i class="fas fa-file-download fa-fw text-secondary me-2"></i>Backup DB (Full JSON)</a></li>
@@ -505,7 +502,7 @@
                     <div class="col-6 col-md-4">
                         <label class="form-label text-muted mb-0" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">Category</label>
                         <select class="w-100" id="detailsCategoryFilter">
-                            <option value="all" selected>All Categories</option>
+                            <!-- Populated dynamically -->
                         </select>
                     </div>
                     <div class="col-6 col-md-4">
@@ -548,6 +545,37 @@
                 <div id="detailsListContainer" class="expense-list m-0 border border-light"></div>
             </div>
             
+        </div>
+    </div>
+</div>
+
+<!-- Categories Manager Modal -->
+<div class="modal fade" id="categoriesModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold text-dark">Manage Categories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3 bg-light">
+                <form id="categoryForm" novalidate class="mb-4 p-3 bg-white rounded border shadow-sm">
+                    <input type="hidden" id="categoryId">
+                    <label class="form-label small fw-bold text-muted mb-2 text-uppercase" id="categoryFormLabel">Add New Category</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control shadow-none" id="categoryNameInput" placeholder="Category name..." required>
+                        <button type="submit" class="btn btn-primary-custom px-3" id="saveCategoryBtn">Save</button>
+                    </div>
+                    <div class="text-end mt-1" id="cancelCategoryEditWrapper" style="display: none;">
+                        <a href="#" class="small text-muted text-decoration-none" id="cancelCategoryEditBtn">Cancel Edit</a>
+                    </div>
+                    <div id="categoryError" class="text-danger small mt-2 fw-medium text-center" style="display: none;"></div>
+                </form>
+
+                <h6 class="text-muted small fw-bold text-uppercase mb-2 px-1">Your Custom Categories</h6>
+                <div id="customCategoryList" class="list-group rounded shadow-sm border-0">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -618,37 +646,7 @@
                     <div class="mb-4">
                         <label for="expenseName" class="form-label">Category</label>
                         <select class="form-select w-100" id="expenseName" required>
-                            <option value="" disabled selected>Select category...</option>
-                            <option value="Grocery">Grocery</option>
-                            <option value="Car Accessories">Car Accessories</option>
-                            <option value="Shopping">Shopping</option>
-                            <option value="Dress & Clothing">Dress & Clothing</option>
-                            <option value="Food & Dining">Food & Dining</option>
-                            <option value="Outing">Outing</option>
-                            <option value="Travel">Travel</option>
-                            <option value="Digital Subscriptions">Digital Subscriptions</option>
-                            <option value="Electronics & Gadgets">Electronics & Gadgets</option>
-                            <option value="Grooming & Care">Grooming & Care</option>
-                            <option value="Vehicle Tax & Registration">Vehicle Tax & Registration</option>
-                            <option value="Rent">Rent</option>
-                            <option value="Utilities">Utilities</option>
-                            <option value="Internet & Mobile">Internet & Mobile</option>
-                            <option value="Health & Medicine">Health & Medicine</option>
-                            <option value="Insurance">Insurance</option>
-                            <option value="Fuel">Fuel</option>
-                            <option value="Public Transit">Public Transit</option>
-                            <option value="Gym & Activewear">Gym & Activewear</option>
-                            <option value="Home Supplies">Home Supplies</option>
-                            <option value="Education">Education</option>
-                            <option value="Gifts & Donations">Gifts & Donations</option>
-                            <option value="Savings & Investments">Savings & Investments</option>
-                            <option value="Furniture & Decor">Furniture & Decor</option>
-                            <option value="Pet Care">Pet Care</option>
-                            <option value="Home Repairs">Home Repairs</option>
-                            <option value="Live Events & Sports">Live Events & Sports</option>
-                            <option value="Books & Stationery">Books & Stationery</option>
-                            <option value="Laundry & Services">Laundry & Services</option>
-                            <option value="Other">Other</option>
+                            <!-- Dynamically Populated -->
                         </select>
                     </div>
 
@@ -745,10 +743,22 @@ $(document).ready(function() {
     const STORAGE_KEY = 'moneyFlowData';
     const PIN_KEY = 'moneyFlowPin';
     const BUDGET_KEY = 'moneyFlowBudget';
+    const CATEGORY_KEY = 'moneyFlowCategories'; // New Key for Custom Categories
     const ACTIVITY_KEY = 'moneyFlowLastActivity';
     const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
     
+    // Default Static Categories
+    const defaultCategories = [
+        "Books & Stationery", "Car Accessories", "Digital Subscriptions", "Dress & Clothing", 
+        "Education", "Electronics & Gadgets", "Food & Dining", "Fuel", "Furniture & Decor", 
+        "Gifts & Donations", "Grocery", "Grooming & Care", "Gym & Activewear", "Health & Medicine", 
+        "Home Repairs", "Home Supplies", "Insurance", "Internet & Mobile", "Laundry & Services", 
+        "Live Events & Sports", "Other", "Outing", "Pet Care", "Public Transit", "Rent", 
+        "Savings & Investments", "Shopping", "Travel", "Utilities", "Vehicle Tax & Registration"
+    ];
+
     let allExpenses = []; 
+    let customCategories = []; 
     let currentAppPin = null;
     let isSettingUpPin = false;
     let currentBudget = 0;
@@ -760,6 +770,7 @@ $(document).ready(function() {
     const budgetModal = new bootstrap.Modal(document.getElementById('budgetModal'));
     const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
     const customConfirmModal = new bootstrap.Modal(document.getElementById('customConfirmModal'));
+    const categoriesModal = new bootstrap.Modal(document.getElementById('categoriesModal'));
 
     // Dynamic Toast Controller
     function showToast(message, type = 'success') {
@@ -794,13 +805,144 @@ $(document).ready(function() {
         }
     });
 
+    // --- CATEGORY MANAGEMENT LOGIC ---
+
+    function populateCategoryDropdowns() {
+        let allCats = [...defaultCategories, ...customCategories.map(c => c.name)];
+        allCats = [...new Set(allCats)]; // Deduplicate
+        allCats.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+        const $expSelect = $('#expenseName');
+        $expSelect.empty();
+        $expSelect.append('<option value="" disabled selected>Select category...</option>');
+        
+        const $detSelect = $('#detailsCategoryFilter');
+        $detSelect.empty();
+        $detSelect.append('<option value="all" selected>All Categories</option>');
+
+        allCats.forEach(c => {
+            $expSelect.append(new Option(c, c));
+            $detSelect.append(new Option(c, c));
+        });
+
+        $expSelect.trigger('change.select2');
+        $detSelect.trigger('change.select2');
+    }
+
+    function renderCustomCategories() {
+        const container = $('#customCategoryList');
+        container.empty();
+        if(customCategories.length === 0) {
+            container.append('<div class="list-group-item text-center text-muted small py-3">No custom categories added.</div>');
+            return;
+        }
+        
+        const sorted = [...customCategories].sort((a,b) => a.name.localeCompare(b.name));
+        sorted.forEach(c => {
+            container.append(`
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                    <span class="fw-medium text-dark" style="font-size: 0.9rem;">${c.name}</span>
+                    <div>
+                        <button type="button" class="btn btn-link text-primary p-1 text-decoration-none shadow-none" onclick="editCustomCategory('${c.id}')" title="Edit"><i class="fas fa-pen"></i></button>
+                        <button type="button" class="btn btn-link text-danger p-1 text-decoration-none shadow-none" onclick="deleteCustomCategory('${c.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `);
+        });
+    }
+
+    function resetCategoryForm() {
+        $('#categoryId').val('');
+        $('#categoryNameInput').val('');
+        $('#categoryFormLabel').text('Add New Category');
+        $('#cancelCategoryEditWrapper').hide();
+        $('#categoryError').hide();
+    }
+
+    function saveCategoriesToStorage(isDelete = false) {
+        localforage.setItem(CATEGORY_KEY, customCategories).then(function() {
+            populateCategoryDropdowns();
+            renderCustomCategories();
+            if(isDelete) {
+                showToast('Category deleted successfully', 'success');
+            }
+        });
+    }
+
+    $('#openCategoriesBtn').click(function(e) {
+        e.preventDefault();
+        resetCategoryForm();
+        renderCustomCategories();
+        categoriesModal.show();
+    });
+
+    $('#cancelCategoryEditBtn').click(function(e) {
+        e.preventDefault();
+        resetCategoryForm();
+    });
+
+    $('#categoryForm').submit(function(e) {
+        e.preventDefault();
+        $('#categoryError').hide();
+        
+        const id = $('#categoryId').val();
+        const name = $('#categoryNameInput').val().trim();
+        
+        if(!name) {
+            $('#categoryError').text('Category name cannot be empty.').show();
+            return;
+        }
+        
+        const lowerName = name.toLowerCase();
+        
+        if(defaultCategories.some(c => c.toLowerCase() === lowerName)) {
+            $('#categoryError').text('This category already exists in default list.').show();
+            return;
+        }
+        
+        const existing = customCategories.find(c => c.name.toLowerCase() === lowerName);
+        if(existing && existing.id !== id) {
+            $('#categoryError').text('This custom category already exists.').show();
+            return;
+        }
+        
+        if(id) {
+            const index = customCategories.findIndex(c => c.id === id);
+            if(index !== -1) customCategories[index].name = name;
+            showToast('Category updated successfully', 'success');
+        } else {
+            customCategories.push({ id: Date.now().toString(), name: name });
+            showToast('Category added successfully', 'success');
+        }
+        
+        saveCategoriesToStorage();
+        resetCategoryForm();
+    });
+
+    window.editCustomCategory = function(id) {
+        const cat = customCategories.find(c => c.id === id);
+        if(cat) {
+            $('#categoryId').val(cat.id);
+            $('#categoryNameInput').val(cat.name).focus();
+            $('#categoryFormLabel').text('Edit Category');
+            $('#cancelCategoryEditWrapper').show();
+            $('#categoryError').hide();
+        }
+    }
+
+    window.deleteCustomCategory = function(id) {
+        showConfirm('Delete Category', 'Are you sure? Existing expenses using this category will safely keep their name.', function() {
+            customCategories = customCategories.filter(c => c.id !== id);
+            saveCategoriesToStorage(true);
+        });
+    }
+
     // --- Web Speech API Setup for Voice to Text ---
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
     let isRecording = false;
     let finalTranscript = ""; 
 
-    // Handle explicit clear button click
     $('#clearDescBtn').click(function(e) {
         e.preventDefault();
         $('#expenseDescription').val('').trigger('input');
@@ -811,7 +953,6 @@ $(document).ready(function() {
         recognition.continuous = true; 
         recognition.interimResults = true; 
         
-        // Listen for manual edits/clears so the script always knows exactly what is currently in the box
         $('#expenseDescription').on('input', function() {
             finalTranscript = $(this).val();
         });
@@ -819,8 +960,6 @@ $(document).ready(function() {
         recognition.onstart = function() {
             isRecording = true;
             $('#micIcon').removeClass('text-secondary').addClass('mic-recording');
-            
-            // Sync internal memory with whatever the user currently has in the text box
             finalTranscript = $('#expenseDescription').val();
         };
 
@@ -895,13 +1034,6 @@ $(document).ready(function() {
         width: '100%'
     });
 
-    // Populate the Details Category Filter dynamically
-    $('#expenseName option').each(function() {
-        if ($(this).val() !== "") {
-            $('#detailsCategoryFilter').append(new Option($(this).text(), $(this).val()));
-        }
-    });
-
     // Initialize Select2 (Details Filter)
     $('#detailsCategoryFilter').select2({
         theme: 'bootstrap-5',
@@ -914,7 +1046,6 @@ $(document).ready(function() {
         localStorage.setItem(ACTIVITY_KEY, Date.now());
     }
 
-    // Throttle activity to prevent excessive writes on scroll
     let activityThrottle = false;
     function handleActivity() {
         if ($('#mainAppWrapper').is(':visible') && !activityThrottle) {
@@ -1041,15 +1172,16 @@ $(document).ready(function() {
                     allExpenses = importedData.expenses;
                     currentAppPin = importedData.pin || currentAppPin;
                     currentBudget = importedData.budget || currentBudget;
+                    customCategories = importedData.customCategories || []; 
                     
                     Promise.all([
                         localforage.setItem(STORAGE_KEY, allExpenses),
                         localforage.setItem(PIN_KEY, currentAppPin),
-                        localforage.setItem(BUDGET_KEY, currentBudget)
+                        localforage.setItem(BUDGET_KEY, currentBudget),
+                        localforage.setItem(CATEGORY_KEY, customCategories)
                     ]).then(function() {
                         isSettingUpPin = false;
                         
-                        // Reset auth screen texts to unlocked state behind the scenes
                         $('#authTitle').text('Enter PIN');
                         $('#authSubtitle').text('Unlock MoneyFlow - HB');
                         $('#authSubmitBtn').text('Unlock');
@@ -1057,6 +1189,7 @@ $(document).ready(function() {
                         $('#confirmPinInput').prop('required', false);
                         
                         updateBudgetMenuText();
+                        populateCategoryDropdowns();
                         
                         showToast('Database restored! Please enter your PIN to continue.', 'success');
                         $('#pinInput').val('').focus();
@@ -1191,11 +1324,14 @@ $(document).ready(function() {
     function loadAppData() {
         Promise.all([
             localforage.getItem(STORAGE_KEY),
-            localforage.getItem(BUDGET_KEY)
-        ]).then(function([expenses, budget]) {
+            localforage.getItem(BUDGET_KEY),
+            localforage.getItem(CATEGORY_KEY) // Load custom categories
+        ]).then(function([expenses, budget, categories]) {
             allExpenses = expenses || [];
             currentBudget = parseFloat(budget) || 0;
+            customCategories = categories || [];
             
+            populateCategoryDropdowns();
             updateBudgetMenuText();
             $('#loadingIndicator').hide();
             $('#summaryCard').addClass('d-flex').show();
@@ -1247,12 +1383,13 @@ $(document).ready(function() {
     }
 
     function getCategoryIcon(category) {
+        // Safe mapping for defaults
         const icons = {
             "Grocery": "fa-shopping-basket", "Car Accessories": "fa-car", "Shopping": "fa-shopping-bag",
             "Food & Dining": "fa-utensils", "Travel": "fa-plane", "Digital Subscriptions": "fa-play",
             "Fuel": "fa-gas-pump", "Health & Medicine": "fa-notes-medical"
         };
-        return icons[category] || "fa-receipt";
+        return icons[category] || "fa-receipt"; // Custom/Unknown categories fallback to receipt icon
     }
 
     function formatDate(dateString) {
@@ -1312,10 +1449,8 @@ $(document).ready(function() {
 
         const total = filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
         
-        const $totalDisplay = $('#totalAmountDisplay');
-        $totalDisplay.text('Rs ' + formatCurrency(total));
-        
-        $totalDisplay.removeClass('text-dark-custom text-budget-safe text-budget-warn text-budget-danger');
+        const $totalDisplay =$('#totalAmountDisplay');
+        $totalDisplay.text('Rs ' + formatCurrency(total));$totalDisplay.removeClass('text-dark-custom text-budget-safe text-budget-warn text-budget-danger');
         
         if (timeVal === 'current_month' && currentBudget > 0) {
             if (total > currentBudget) {
@@ -1481,7 +1616,8 @@ $(document).ready(function() {
         const backupData = {
             expenses: allExpenses,
             pin: currentAppPin,
-            budget: currentBudget
+            budget: currentBudget,
+            customCategories: customCategories
         };
 
         const dataStr = JSON.stringify(backupData, null, 2);
@@ -1515,22 +1651,26 @@ $(document).ready(function() {
                     throw new Error("Invalid format.");
                 }
                 
-                showConfirm('Restore Database', 'WARNING: This will replace all your current data (Expenses, PIN, and Budget). Proceed?', function() {
+                showConfirm('Restore Database', 'WARNING: This will replace all your current data (Expenses, PIN, Budget, and Categories). Proceed?', function() {
                     allExpenses = importedData.expenses;
                     currentAppPin = importedData.pin || currentAppPin;
                     currentBudget = importedData.budget || currentBudget;
+                    customCategories = importedData.customCategories || []; 
                     
                     Promise.all([
                         localforage.setItem(STORAGE_KEY, allExpenses),
                         localforage.setItem(PIN_KEY, currentAppPin),
-                        localforage.setItem(BUDGET_KEY, currentBudget)
+                        localforage.setItem(BUDGET_KEY, currentBudget),
+                        localforage.setItem(CATEGORY_KEY, customCategories)
                     ]).then(function() {
                         updateBudgetMenuText();
+                        populateCategoryDropdowns();
                         
                         detailsModal.hide();
                         expenseModal.hide();
                         budgetModal.hide();
                         changePinModal.hide();
+                        categoriesModal.hide();
                         
                         localStorage.removeItem(ACTIVITY_KEY);
                         $('#mainAppWrapper').hide();
@@ -1633,6 +1773,13 @@ $(document).ready(function() {
             $('#expenseError').hide(); 
             if (isRecording && recognition) recognition.stop();
             $('#expenseId').val(exp.id);
+            
+            // Safe assignment if category was previously deleted
+            if ($('#expenseName').find("option[value='" + exp.name.replace(/'/g, "\\'") + "']").length === 0) {
+                const newOption = new Option(exp.name + ' (Legacy)', exp.name, true, true);
+                $('#expenseName').append(newOption);
+            }
+            
             $('#expenseName').val(exp.name).trigger('change');
             $('#expenseAmount').val(exp.amount);
             $('#expensePaidVia').val(exp.paidVia);
